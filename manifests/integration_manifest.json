@@ -1,0 +1,7 @@
+{
+    "id": "nx.analytics_api_fake_objects",
+    "name": "Analytics API fake detection",
+    "description": "Test application for displaying bounding boxes",
+    "vendor": "Network Optix",
+    "version": "0.0.1"
+}

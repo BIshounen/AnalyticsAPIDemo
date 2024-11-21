@@ -1,0 +1,25 @@
+{
+    "typeLibrary":
+    {
+        "objectTypes":
+        [
+            {
+                "id": "analytics.api.stub.fake_vehicle",
+                "name": "Analytics API stub Object Type"
+            }
+        ]
+    },
+    "deviceAgentSettingsModel":
+    {
+        "type": "Settings",
+        "items":
+        [
+            {
+                "type": "CheckBox",
+                "name": "Test Device Agent's setSettings",
+                "caption": "Test Device Agent's setSettings",
+                "defaultValue": false
+            }
+        ]
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "supportedTypes":
+    [
+        {
+            "objectTypeId": "analytics.api.stub.fake_vehicle",
+            "attributes": []
+        }
+    ]
+}
