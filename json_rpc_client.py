@@ -28,14 +28,18 @@ class JSONRPCClient:
   def on_message(self, message):
     jsn = json.loads(message)
     if 'jsonrpc' in jsn:
-      self.on_message_callback(jsn.get('method', ''), jsn.get('params',''))
+      if 'error' in jsn:
+        self.on_message_callback(method='error', message=jsn['error'].get('message', ''))
+      else:
+        self.on_message_callback(method=jsn.get('method', ''), message=jsn.get('result',''))
     else:
       print('Unknown message')
 
   def send(self, method, payload):
     message = {"method": method,
                "params": payload,
-               "jsonrpc": "2.0"
+               "jsonrpc": "2.0",
+               'id': 1
                }
     self.ws_connect.send(json.dumps(message))
 

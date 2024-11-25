@@ -2,7 +2,6 @@ import urllib.parse
 from threading import Thread
 
 from websocket import create_connection
-from rel.util import listen
 
 WS_PATH = "/jsonrpc"
 

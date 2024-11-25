@@ -22,7 +22,7 @@ class Integration:
     self.json_rpc_client = JSONRPCClient(server_url=server_url, on_message_callback=self.on_message)
     self.json_rpc_client.authorize(self.credentials)
 
-  def on_message(self, message):
+  def on_message(self, method, message):
     print(message)
 
   def check_registered(self):
