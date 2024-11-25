@@ -24,6 +24,7 @@ class JSONRPCClient:
   def __init__(self, server_url, on_message_callback):
     self.on_message_callback = on_message_callback
     self.ws_connect = WSClass(server_url=server_url, on_message=self.on_message)
+    self.current_id = 0
 
   def on_message(self, message):
     jsn = json.loads(message)
@@ -31,7 +32,7 @@ class JSONRPCClient:
       if 'error' in jsn:
         self.on_message_callback(method='error', message=jsn['error'].get('message', ''))
       else:
-        self.on_message_callback(method=jsn.get('method', ''), message=jsn.get('result',''))
+        self.on_message_callback(method=jsn.get('method', ''), message=jsn.get('result',''), message_id=jsn.get('id',''))
     else:
       print('Unknown message')
 
@@ -39,9 +40,10 @@ class JSONRPCClient:
     message = {"method": method,
                "params": payload,
                "jsonrpc": "2.0",
-               'id': 1
+               'id': self.current_id
                }
     self.ws_connect.send(json.dumps(message))
+    self.current_id += 1
 
   def authorize(self, credentials):
     payload = {

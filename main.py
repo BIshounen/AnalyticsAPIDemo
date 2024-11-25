@@ -19,4 +19,6 @@ if __name__ == "__main__":
                             integration_manifest=integration_manifest,
                             engine_manifest=engine_manifest,
                             device_agent_manifest=agent_manifest,
-                            credentials_path=CREDENTIALS_PATH)
+                            credentials_path=CREDENTIALS_PATH,
+                            auth_refresh=10
+                            )
