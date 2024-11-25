@@ -1,6 +1,7 @@
 import json
 import os
 import rest_utils
+from json_rpc_client import JSONRPCClient
 
 
 class Integration:
@@ -15,8 +16,17 @@ class Integration:
     if not self.check_registered():
         self.register()
 
+    with open(credentials_path, 'r') as f:
+      self.credentials = json.load(f)
+
+    self.json_rpc_client = JSONRPCClient(server_url=server_url, on_message_callback=self.on_message)
+    self.json_rpc_client.authorize(self.credentials)
+
+  def on_message(self, message):
+    print(message)
+
   def check_registered(self):
-    os.path.isfile(self.credentials_path)
+    return os.path.isfile(self.credentials_path)
 
   def register(self):
     creds = rest_utils.register_integration(integration_manifest=self.integration_manifest,

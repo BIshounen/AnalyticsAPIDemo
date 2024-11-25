@@ -1,6 +1,8 @@
-import asyncio
 import urllib.parse
-from websockets.asyncio.client import connect
+from threading import Thread
+
+from websocket import create_connection
+from rel.util import listen
 
 WS_PATH = "/jsonrpc"
 
@@ -10,7 +12,24 @@ def _concat_url(server_url, path):
     result = str(urllib.parse.urlunparse(initial_url._replace(path=path, scheme='ws')))
     return result
 
-def ws_address(server_url):
-  return _concat_url(server_url=server_url, path=WS_PATH)
 
-def 
+class WSClass:
+
+  def __init__(self, on_message, server_url):
+    self.on_message_callback = on_message
+    self.ws = create_connection(_concat_url(server_url=server_url, path=WS_PATH))
+
+    self.listen_thread = Thread(target=self.listen)
+    self.listen_thread.start()
+
+  def listen(self):
+    while True:
+      print('receiving')
+      raw_message = self.ws.recv()
+      print("received")
+      self.on_message_callback(raw_message)
+
+  def send(self, message):
+    print('sending')
+    self.ws.send(message)
+    print('sent', message)
