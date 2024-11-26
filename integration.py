@@ -21,6 +21,8 @@ class Integration:
     self.device_agent_manifest = device_agent_manifest
     self.credentials_path = credentials_path
     self.auth_refresh = auth_refresh
+    self.is_approved = False
+    self.integration_id = None
 
     if not self.check_registered():
         self.register()
@@ -28,14 +30,19 @@ class Integration:
     with open(credentials_path, 'r') as f:
       self.credentials = json.load(f)
 
-    self.json_rpc_client = JSONRPCClient(server_url=server_url, on_message_callback=self.on_message)
-
+    self.json_rpc_client = JSONRPCClient(server_url=server_url, integration=self)
+    self.json_rpc_client.authorize(self.credentials)
     auth_tread = Thread(target=self.auth)
     auth_tread.start()
 
+    self.json_rpc_client.subscribe_to_users(self.credentials['user'])
 
-  def on_message(self, method, message, message_id):
-    print(method, message, message_id)
+    if self.is_approved:
+      self.json_rpc_client.subscribe_to_analytics()
+
+  @staticmethod
+  def print_message(message, method=None):
+    print(message, method)
 
   def check_registered(self):
     return os.path.isfile(self.credentials_path)
@@ -49,5 +56,13 @@ class Integration:
 
   def auth(self):
     while True:
-      self.json_rpc_client.authorize(self.credentials)
       time.sleep(self.auth_refresh)
+      self.json_rpc_client.authorize(self.credentials)
+
+  def set_parameters(self, parameters):
+    self.is_approved = parameters.get('parameters', {}).get('integrationRequestData').get('isApproved', False)
+    self.integration_id = parameters.get('parameters', {}).get('integrationRequestData').get('integrationId', None)
+    pass
+
+  def start_sending(self):
+    pass
