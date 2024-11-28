@@ -37,8 +37,6 @@ class Integration:
 
     self.json_rpc_client.subscribe_to_users(self.credentials['user'])
 
-    if self.is_approved:
-      self.json_rpc_client.subscribe_to_analytics()
 
   @staticmethod
   def print_message(message, method=None):
@@ -62,7 +60,9 @@ class Integration:
   def set_parameters(self, parameters):
     self.is_approved = parameters.get('parameters', {}).get('integrationRequestData').get('isApproved', False)
     self.integration_id = parameters.get('parameters', {}).get('integrationRequestData').get('integrationId', None)
-    pass
+
+    if self.is_approved:
+      self.json_rpc_client.subscribe_to_analytics()
 
   def start_sending(self):
     pass

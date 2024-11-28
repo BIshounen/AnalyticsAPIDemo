@@ -5,6 +5,8 @@ METHOD_CREATE_SESSION = "rest.v3.login.sessions.create"
 METHOD_SUBSCRIBE_USERS = "rest.v3.users.subscribe"
 METHOD_UPDATE_USERS = "rest.v3.users.update"
 METHOD_SUBSCRIBE_ANALYTICS = 'rest.v4.analytics.subscribe'
+METHOD_CREATE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.create'
+METHOD_CREATE_DEVICE_AGENT_MANIFEST = 'rest.v4.analytics.engines.deviceAgents.manifest.create'
 
 
 class JSONRPCClient:
@@ -28,9 +30,14 @@ class JSONRPCClient:
       else:
         if 'id' in jsn and jsn['id'] in self.reply_queue:
           self.reply_queue[jsn['id']](jsn.get('result'))
+          self.reply_queue.pop(jsn['id'])
         if 'method' in jsn:
           if jsn['method'] == METHOD_UPDATE_USERS:
             self.set_parameters(jsn.get('params', {}))
+          if jsn['method'] == METHOD_CREATE_DEVICE_AGENT:
+            pass ## add device agent and reply with manifest
+          else:
+            self.integration.print_message(message=jsn)
         else:
           self.integration.print_message(message=jsn.get('result',''))
     else:

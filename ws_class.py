@@ -26,9 +26,11 @@ class WSClass:
       print('receiving')
       raw_message = self.ws.recv()
       print("received")
+      print(raw_message)
       self.on_message_callback(raw_message)
 
   def send(self, message):
     print('sending')
+    print(message)
     self.ws.send(message)
     print('sent', message)
