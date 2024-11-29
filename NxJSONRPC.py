@@ -2,8 +2,8 @@ import urllib.parse
 import json
 import uuid
 import asyncio
-from crypt import methods
 from threading import Thread
+from AnalyticsAPIInterface import AnalyticsAPIInterface
 
 from websocket import create_connection
 
@@ -28,22 +28,21 @@ class RequestAwaitable:
     self.respond = None
 
   def __await__(self):
-    if self.respond is None:
+    while self.respond is None:
       yield
-
-    # if self.respond is None:
-    #   raise RuntimeError("Await wasn't used with future")
 
     return self.respond
 
 
 
+
 class NxJSONRPC:
 
-  def __init__(self, server_url: str):
+  def __init__(self, server_url: str, integration: AnalyticsAPIInterface):
 
-    self.requests_queue: dict[uuid.UUID, RequestAwaitable] = dict()
+    self.requests_queue: dict[str, RequestAwaitable] = dict()
     self.server_url = server_url
+    self.integration = integration
     self.ws = create_connection(_concat_url(server_url=server_url, path=WS_PATH))
     self.listen_thread = Thread(target=self.listen)
     self.listen_thread.start()
@@ -61,12 +60,16 @@ class NxJSONRPC:
   def parse_response(self, message: dict):
     if message['id'] in self.requests_queue:
       self.requests_queue[message['id']].respond = message['result']
+      self.requests_queue.pop(message['id'])
+
 
   def parse_request(self, message: dict):
     pass
 
   def parse_notification(self, message: dict):
-    pass
+    if 'method' in message:
+      if message['method'] == METHOD_UPDATE_USERS:
+        self.integration.set_parameters(message['params'])
 
   def listen(self):
     while True:
@@ -78,24 +81,26 @@ class NxJSONRPC:
 
 
   @staticmethod
-  def compose_request(message: str|dict|list, method: str, message_id: uuid.UUID):
+  def compose_request(message: str|dict|list, method: str, message_id: str):
     message_dict = {
-      'id': str(message_id),
+      'id': message_id,
       'params': message,
-      'method': method
+      'method': method,
+      'jsonrpc': '2.0'
     }
 
     return json.dumps(message_dict)
 
   async def make_request(self, message: str|dict|list, method: str):
-    message_id = uuid.uuid4()
+    message_id = str(uuid.uuid4())
     message_string = self.compose_request(message=message, method=method, message_id=message_id)
     request = RequestAwaitable()
     self.requests_queue[message_id] = request
     self.send_message(message_string=message_string)
-    await request
+    return await request
 
   def send_message(self, message_string):
+    print("sent: ", message_string)
     self.ws.send(message_string)
 
   def notify(self, message):
@@ -105,4 +110,12 @@ class NxJSONRPC:
     pass
 
   async def authorize(self, credentials: dict):
-    await self.make_request(method=METHOD_CREATE_SESSION, message=credentials)
+    message = credentials
+    message['setSession'] = True
+    await self.make_request(method=METHOD_CREATE_SESSION, message=message)
+    print("authorized")
+
+  async def subscribe_on_users(self, credentials: dict):
+    message = {"id": credentials['username']}
+    parameters = await self.make_request(method=METHOD_SUBSCRIBE_USERS, message=message)
+    self.integration.set_parameters(parameters)
