@@ -1,7 +1,6 @@
 import abc
 import asyncio
 import os
-import time
 from typing import Hashable
 import rest_utils
 import json
@@ -24,7 +23,7 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
       return True
 
 
-  def __init__(self, server_url: str, integration_manifest: str, engine_manifest: str, credentials_path: str):
+  def __init__(self, server_url: str, integration_manifest: dict, engine_manifest: dict, credentials_path: str):
     self.server_url = server_url
     self.credentials = dict()
     self.integration_manifest = integration_manifest
@@ -56,8 +55,31 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
     print("integration id", self.integration_id)
 
   @abc.abstractmethod
-  def get_device_agent_manifest(self, device_agent_id: Hashable) -> str:
+  def get_device_agent_manifest(self, device_agent_id: Hashable):
     raise NotImplemented
+
+  @abc.abstractmethod
+  def on_device_agent_activated(self, device_parameters: dict):
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def on_agent_settings_update(self, parameters: dict):
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def on_agent_active_settings_change(self, parameters: dict):
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def on_engine_settings_update(self, parameters: dict):
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def on_engine_active_settings_change(self, parameters: dict):
+    raise NotImplemented
+
+  def get_integration_side_settings(self, parameters):
+    return {}
 
   async def main(self):
 
@@ -67,7 +89,8 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
     approval = self.ApprovalAwaitable(self)
     await approval
     print('approved')
-
+    await self.JSONRPC.subscribe_to_analytics(self.integration_id)
+    print('subscribed')
 
   def run(self):
     asyncio.run(self.main())

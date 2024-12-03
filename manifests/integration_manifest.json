@@ -3,5 +3,26 @@
     "name": "Analytics API fake detection",
     "description": "Test application for displaying bounding boxes",
     "vendor": "Network Optix",
-    "version": "0.0.1"
+    "version": "0.0.1",
+    "engineSettingsModel":
+    {
+        "type": "Settings",
+        "items":
+        [
+            {
+                "type": "CheckBox",
+                "name": "Test Engine's setSettings",
+                "caption": "Test Engine's setSettings",
+                "defaultValue": false
+            },
+            {
+                "type": "CheckBox",
+                "name": "Test Engine's Active Settings",
+                "caption": "Test Engine's Active Settings",
+                "defaultValue": false,
+                "isActive": true
+            }
+        ]
+    }
 }
+

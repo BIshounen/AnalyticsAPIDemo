@@ -1,7 +1,6 @@
 import urllib.parse
 import json
 import uuid
-import asyncio
 from threading import Thread
 from AnalyticsAPIInterface import AnalyticsAPIInterface
 
@@ -15,6 +14,11 @@ METHOD_UPDATE_USERS = "rest.v3.users.update"
 METHOD_SUBSCRIBE_ANALYTICS = 'rest.v4.analytics.subscribe'
 METHOD_CREATE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.create'
 METHOD_CREATE_DEVICE_AGENT_MANIFEST = 'rest.v4.analytics.engines.deviceAgents.manifest.create'
+METHOD_GET_INTEGRATION_SIDE_SETTINGS = 'rest.v4.analytics.engines.integrationSideSettings.get'
+METHOD_UPDATE_DEVICE_AGENT_SETTINGS = 'rest.v4.analytics.engines.deviceAgents.settings.update'
+METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.deviceAgents.settings.notifyActiveSettingChanged'
+METHOD_UPDATE_ENGINE_SETTINGS = 'rest.v4.analytics.engines.settings.update'
+METHOD_NOTIFY_ENGINE_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.settings.notifyActiveSettingChanged'
 
 def _concat_url(server_url, path):
   initial_url = urllib.parse.urlparse(server_url)
@@ -32,8 +36,6 @@ class RequestAwaitable:
       yield
 
     return self.respond
-
-
 
 
 class NxJSONRPC:
@@ -64,7 +66,21 @@ class NxJSONRPC:
 
 
   def parse_request(self, message: dict):
-    pass
+    if 'method' not in message:
+      return
+
+    if message['method'] == METHOD_CREATE_DEVICE_AGENT:
+      self.react_on_device_agent_creation(message)
+    if message['method'] == METHOD_GET_INTEGRATION_SIDE_SETTINGS:
+      self.react_on_integration_side_settings(message)
+    if message['method'] == METHOD_UPDATE_DEVICE_AGENT_SETTINGS:
+      self.react_on_agent_settings_update(message)
+    if message['method'] == METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE:
+      self.react_on_agent_active_settings(message)
+    if message['method'] == METHOD_UPDATE_ENGINE_SETTINGS:
+      self.react_on_engine_settings_update(message)
+    if message['method'] == METHOD_NOTIFY_ENGINE_ACTIVE_SETTINGS_CHANGE:
+      self.react_on_engine_active_settings(message)
 
   def parse_notification(self, message: dict):
     if 'method' in message:
@@ -91,6 +107,16 @@ class NxJSONRPC:
 
     return json.dumps(message_dict)
 
+  @staticmethod
+  def compose_respond(message: str|dict|list, message_id: str):
+    message_dict = {
+      'id': message_id,
+      'result': message,
+      'jsonrpc': '2.0'
+    }
+
+    return json.dumps(message_dict)
+
   async def make_request(self, message: str|dict|list, method: str):
     message_id = str(uuid.uuid4())
     message_string = self.compose_request(message=message, method=method, message_id=message_id)
@@ -107,7 +133,8 @@ class NxJSONRPC:
     pass
 
   def respond(self, message, message_id):
-    pass
+    respond = self.compose_respond(message_id=message_id, message=message)
+    self.send_message(respond)
 
   async def authorize(self, credentials: dict):
     message = credentials
@@ -119,3 +146,60 @@ class NxJSONRPC:
     message = {"id": credentials['username']}
     parameters = await self.make_request(method=METHOD_SUBSCRIBE_USERS, message=message)
     self.integration.set_parameters(parameters)
+
+  async def subscribe_to_analytics(self, integration_id: str):
+    message = {"id": integration_id}
+    await self.make_request(method=METHOD_SUBSCRIBE_ANALYTICS, message=message)
+
+  def react_on_device_agent_creation(self, message):
+    device_parameters = message['params']['parameters']
+    manifest = self.integration.get_device_agent_manifest(device_parameters)
+    respond = {
+      'type': 'ok',
+      'data': {
+        'deviceAgentManifest': manifest
+      }
+    }
+    self.respond(message=respond, message_id=message['id'])
+
+  def react_on_integration_side_settings(self, message):
+    parameters = message['params']['parameters']
+    settings = self.integration.get_integration_side_settings(parameters)
+    self.respond(message=settings, message_id=message['id'])
+
+  def react_on_agent_settings_update(self, message):
+    parameters = message['params']['parameters']
+    data = self.integration.on_agent_settings_update(parameters)
+    respond = {
+      'type': 'ok',
+      'data': data
+    }
+    self.respond(message=respond, message_id=message['id'])
+
+  def react_on_agent_active_settings(self, message):
+    parameters = message['params']['parameters']
+    data = self.integration.on_agent_active_settings_change(parameters)
+    respond = {
+      'type': 'ok',
+      'data': data
+    }
+    self.respond(message=respond, message_id=message['id'])
+
+  def react_on_engine_settings_update(self, message):
+    parameters = message['params']['parameters']
+    data = self.integration.on_engine_settings_update(parameters)
+    respond = {
+      'type': 'ok',
+      'data': data
+    }
+    self.respond(message=respond, message_id=message['id'])
+
+  def react_on_engine_active_settings(self, message):
+    parameters = message['params']['parameters']
+    data = self.integration.on_engine_active_settings_change(parameters)
+    respond = {
+      'type': 'ok',
+      'data': data
+    }
+    self.respond(message=respond, message_id=message['id'])
+
