@@ -21,7 +21,11 @@ class AnalyticsAPIInterface(metaclass=abc.ABCMeta):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_device_agent_activated(self, device_agent_id):
+  def on_device_agent_created(self, device_parameters: dict):
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def on_device_agent_deletion(self, device_id: str):
     raise NotImplemented
 
   @abc.abstractmethod

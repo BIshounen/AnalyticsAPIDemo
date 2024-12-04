@@ -55,27 +55,31 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
     print("integration id", self.integration_id)
 
   @abc.abstractmethod
-  def get_device_agent_manifest(self, device_agent_id: Hashable):
+  def get_device_agent_manifest(self, device_agent_id):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_device_agent_activated(self, device_parameters: dict):
+  def on_device_agent_created(self, device_parameters):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_agent_settings_update(self, parameters: dict):
+  def on_device_agent_deletion(self, device_id):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_agent_active_settings_change(self, parameters: dict):
+  def on_agent_settings_update(self, parameters):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_engine_settings_update(self, parameters: dict):
+  def on_agent_active_settings_change(self, parameters):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_engine_active_settings_change(self, parameters: dict):
+  def on_engine_settings_update(self, parameters):
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def on_engine_active_settings_change(self, parameters):
     raise NotImplemented
 
   def get_integration_side_settings(self, parameters):

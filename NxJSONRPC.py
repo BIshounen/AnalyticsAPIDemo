@@ -13,6 +13,7 @@ METHOD_SUBSCRIBE_USERS = "rest.v3.users.subscribe"
 METHOD_UPDATE_USERS = "rest.v3.users.update"
 METHOD_SUBSCRIBE_ANALYTICS = 'rest.v4.analytics.subscribe'
 METHOD_CREATE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.create'
+METHOD_DELETE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.delete'
 METHOD_CREATE_DEVICE_AGENT_MANIFEST = 'rest.v4.analytics.engines.deviceAgents.manifest.create'
 METHOD_GET_INTEGRATION_SIDE_SETTINGS = 'rest.v4.analytics.engines.integrationSideSettings.get'
 METHOD_UPDATE_DEVICE_AGENT_SETTINGS = 'rest.v4.analytics.engines.deviceAgents.settings.update'
@@ -86,6 +87,8 @@ class NxJSONRPC:
     if 'method' in message:
       if message['method'] == METHOD_UPDATE_USERS:
         self.integration.set_parameters(message['params'])
+      if message['method'] == METHOD_DELETE_DEVICE_AGENT:
+        self.react_on_device_agent_deletion(message)
 
   def listen(self):
     while True:
@@ -161,6 +164,11 @@ class NxJSONRPC:
       }
     }
     self.respond(message=respond, message_id=message['id'])
+    self.integration.on_device_agent_created(device_parameters=device_parameters)
+
+  def react_on_device_agent_deletion(self, message):
+    device_id = message['params']['target']['deviceId']
+    self.integration.on_device_agent_deletion(device_id=device_id)
 
   def react_on_integration_side_settings(self, message):
     parameters = message['params']['parameters']
@@ -202,4 +210,3 @@ class NxJSONRPC:
       'data': data
     }
     self.respond(message=respond, message_id=message['id'])
-
