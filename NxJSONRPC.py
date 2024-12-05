@@ -1,6 +1,7 @@
 import urllib.parse
 import json
 import uuid
+from crypt import methods
 from threading import Thread
 from AnalyticsAPIInterface import AnalyticsAPIInterface
 
@@ -20,6 +21,7 @@ METHOD_UPDATE_DEVICE_AGENT_SETTINGS = 'rest.v4.analytics.engines.deviceAgents.se
 METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.deviceAgents.settings.notifyActiveSettingChanged'
 METHOD_UPDATE_ENGINE_SETTINGS = 'rest.v4.analytics.engines.settings.update'
 METHOD_NOTIFY_ENGINE_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.settings.notifyActiveSettingChanged'
+METHOD_CREATE_OBJECT_METADATA = "rest.v4.analytics.engines.deviceAgents.metadata.object.create"
 
 def _concat_url(server_url, path):
   initial_url = urllib.parse.urlparse(server_url)
@@ -120,6 +122,16 @@ class NxJSONRPC:
 
     return json.dumps(message_dict)
 
+  @staticmethod
+  def compose_notification(message: str|dict|list, method: str):
+    message_dict = {
+      'method': method,
+      'params': message,
+      'jsonrpc': '2.0'
+    }
+
+    return json.dumps(message_dict)
+
   async def make_request(self, message: str|dict|list, method: str):
     message_id = str(uuid.uuid4())
     message_string = self.compose_request(message=message, method=method, message_id=message_id)
@@ -132,8 +144,9 @@ class NxJSONRPC:
     print("sent: ", message_string)
     self.ws.send(message_string)
 
-  def notify(self, message):
-    pass
+  def notify(self, message, method):
+    notification = self.compose_notification(message=message, method=method)
+    self.send_message(notification)
 
   def respond(self, message, message_id):
     respond = self.compose_respond(message_id=message_id, message=message)
@@ -155,7 +168,7 @@ class NxJSONRPC:
     await self.make_request(method=METHOD_SUBSCRIBE_ANALYTICS, message=message)
 
   def react_on_device_agent_creation(self, message):
-    device_parameters = message['params']['parameters']
+    device_parameters = message['params']
     manifest = self.integration.get_device_agent_manifest(device_parameters)
     respond = {
       'type': 'ok',
@@ -210,3 +223,8 @@ class NxJSONRPC:
       'data': data
     }
     self.respond(message=respond, message_id=message['id'])
+
+  def send_object(self, engine_id, device_agent_id, object_data):
+    data = object_data
+
+    self.notify(message=data, method=METHOD_CREATE_OBJECT_METADATA)
