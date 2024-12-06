@@ -3,7 +3,8 @@
     [
         {
             "objectTypeId": "analytics.api.stub.object.type",
-            "attributes": []
+            "attributes": [
+            ]
         },
         {
             "objectTypeId": "analytics.api.stub.objectTypeWithActions",

@@ -11,7 +11,7 @@
         [
             {
                 "type": "CheckBox",
-                "name": "Test Engine's setSettings",
+                "Name": "Test Engine's setSettings",
                 "caption": "Test Engine's setSettings",
                 "defaultValue": false
             },

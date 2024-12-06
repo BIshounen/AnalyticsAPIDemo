@@ -12,7 +12,7 @@ class DeviceAgent:
     self.json_rpc_client = json_rpc_client
     self.engine_id = engine_id
     self.agent_id = agent_id
-    self.frequency = 1
+    self.frequency = 3
     self.duration = duration
     self.running = True
     self.thread = Thread(target=self.send_object)
@@ -32,14 +32,14 @@ class DeviceAgent:
       object_data = {
         "id": self.engine_id,
         "deviceId": self.agent_id,
-        "timestampUs": int(time.time())*1000,
-        "durationUs": current_time,
+        "timestampUs": int(time.time()*1000000),
+        "durationUs": 1000000 * self.frequency,
         "objects": [
           {
             "typeId": "analytics.api.stub.object.type",
             "trackId": track_id,
             "boundingBox": {
-              "x": 0.3720000000000003,
+              "x": 0.37,
               "y": 0.33,
               "width": 0.2,
               "height": 0.33
