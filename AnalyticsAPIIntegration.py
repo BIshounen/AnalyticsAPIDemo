@@ -95,6 +95,22 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
     print('approved')
     await self.JSONRPC.subscribe_to_analytics(self.integration_id)
     print('subscribed')
+    device_agents = rest_utils.get_device_agents(server_url=self.server_url,
+                                         credentials=self.credentials,
+                                          integration_id=self.integration_id)
+
+    for device_agent in device_agents:
+      if device_agent['isEnabled']:
+        device_parameters = {
+          "parameters": {
+            'id': device_agent['id']
+          },
+          "target": {
+            "engineId": device_agent['engineId']
+          }
+        }
+        self.on_device_agent_created(device_parameters=device_parameters)
+
 
   def run(self):
     asyncio.run(self.main())
