@@ -29,7 +29,11 @@ class AnalyticsAPIInterface(metaclass=abc.ABCMeta):
     raise NotImplemented
 
   @abc.abstractmethod
-  def get_integration_side_settings(self, parameters) -> dict:
+  def get_integration_engine_side_settings(self, parameters) -> dict:
+    raise NotImplemented
+
+  @abc.abstractmethod
+  def get_integration_device_agent_side_settings(self, parameters) -> dict:
     raise NotImplemented
 
   @abc.abstractmethod

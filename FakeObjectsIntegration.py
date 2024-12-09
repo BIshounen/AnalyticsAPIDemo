@@ -33,7 +33,7 @@ class DeviceAgent:
         "id": self.engine_id,
         "deviceId": self.agent_id,
         "timestampUs": int(time.time()*1000000),
-        "durationUs": 1000000 * self.frequency,
+        "durationUs": 1000000 * self.frequency + 5000000,
         "objects": [
           {
             "typeId": "analytics.api.stub.object.type",

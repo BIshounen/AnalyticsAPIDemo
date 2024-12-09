@@ -82,7 +82,10 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
   def on_engine_active_settings_change(self, parameters):
     raise NotImplemented
 
-  def get_integration_side_settings(self, parameters):
+  def get_integration_engine_side_settings(self, parameters):
+    return {}
+
+  def get_integration_device_agent_side_settings(self, parameters):
     return {}
 
   async def main(self):

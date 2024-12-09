@@ -16,7 +16,8 @@ METHOD_SUBSCRIBE_ANALYTICS = 'rest.v4.analytics.subscribe'
 METHOD_CREATE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.create'
 METHOD_DELETE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.delete'
 METHOD_CREATE_DEVICE_AGENT_MANIFEST = 'rest.v4.analytics.engines.deviceAgents.manifest.create'
-METHOD_GET_INTEGRATION_SIDE_SETTINGS = 'rest.v4.analytics.engines.integrationSideSettings.get'
+METHOD_GET_INTEGRATION_ENGINE_SIDE_SETTINGS = 'rest.v4.analytics.engines.integrationSideSettings.get'
+METHOD_GET_INTEGRATION_DEVICE_AGENT_SIDE_SETTINGS = 'rest.v4.analytics.engines.deviceAgents.integrationSideSettings.get'
 METHOD_UPDATE_DEVICE_AGENT_SETTINGS = 'rest.v4.analytics.engines.deviceAgents.settings.update'
 METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.deviceAgents.settings.notifyActiveSettingChanged'
 METHOD_UPDATE_ENGINE_SETTINGS = 'rest.v4.analytics.engines.settings.update'
@@ -74,8 +75,10 @@ class NxJSONRPC:
 
     if message['method'] == METHOD_CREATE_DEVICE_AGENT:
       self.react_on_device_agent_creation(message)
-    if message['method'] == METHOD_GET_INTEGRATION_SIDE_SETTINGS:
-      self.react_on_integration_side_settings(message)
+    if message['method'] == METHOD_GET_INTEGRATION_ENGINE_SIDE_SETTINGS:
+      self.react_on_integration_engine_side_settings(message)
+    if message['method'] == METHOD_GET_INTEGRATION_DEVICE_AGENT_SIDE_SETTINGS:
+      self.react_on_integration_device_agent_side_settings(message)
     if message['method'] == METHOD_UPDATE_DEVICE_AGENT_SETTINGS:
       self.react_on_agent_settings_update(message)
     if message['method'] == METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE:
@@ -183,9 +186,14 @@ class NxJSONRPC:
     device_id = message['params']['target']['deviceId']
     self.integration.on_device_agent_deletion(device_id=device_id)
 
-  def react_on_integration_side_settings(self, message):
+  def react_on_integration_engine_side_settings(self, message):
     parameters = message['params']['parameters']
-    settings = self.integration.get_integration_side_settings(parameters)
+    settings = self.integration.get_integration_engine_side_settings(parameters)
+    self.respond(message=settings, message_id=message['id'])
+
+  def react_on_integration_device_agent_side_settings(self, message):
+    parameters = message['params']['parameters']
+    settings = self.integration.get_integration_device_agent_side_settings(parameters)
     self.respond(message=settings, message_id=message['id'])
 
   def react_on_agent_settings_update(self, message):
