@@ -45,7 +45,7 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
         json.dump(creds, f)
     with open(self.credentials_path, 'r') as f:
       temp_credentials = json.load(f)
-      self.credentials = {'username': temp_credentials['user'], 'password': temp_credentials['password']}
+      self.credentials = {'username': temp_credentials['username'], 'password': temp_credentials['password']}
 
 
   def set_parameters(self, parameters: dict):
