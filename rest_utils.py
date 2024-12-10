@@ -1,4 +1,5 @@
 import json
+from enum import verify
 
 import requests
 import urllib.parse
@@ -21,7 +22,7 @@ def register_integration(server_url, integration_manifest, engine_manifest):
     params = {"integrationManifest": integration_manifest,
               "engineManifest": engine_manifest,
               "pinCode": "9876"}
-    result = requests.post(_concat_url(server_url=server_url, path=REGISTER_PATH), json=params)
+    result = requests.post(_concat_url(server_url=server_url, path=REGISTER_PATH), json=params, verify=False)
     if result.status_code == 200:
         creds = {"user" : result.json()['user'], "password": result.json()['password']}
         return creds
