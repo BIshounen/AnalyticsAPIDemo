@@ -1,13 +1,21 @@
 import time
 import uuid
+import imutils
 from threading import Thread
 
+import cv2
+import argparse
+
+import rest_utils
 from AnalyticsAPIIntegration import AnalyticsAPIIntegration
+from config import server_url
+
+RESIZE = 300
 
 
 class DeviceAgent:
 
-  def __init__(self, engine_id, agent_id, json_rpc_client, duration):
+  def __init__(self, engine_id, agent_id, json_rpc_client, duration, credentials):
     self.shift = 0
     self.json_rpc_client = json_rpc_client
     self.engine_id = engine_id
@@ -16,40 +24,60 @@ class DeviceAgent:
     self.duration = duration
     self.running = True
     self.thread = Thread(target=self.send_object)
+    self.credentials = credentials
 
   def start(self):
     self.thread.start()
 
   def send_object(self):
-    current_time = 0
-    track_id = str(uuid.uuid4())
+
+    haar_cascade = 'cars.xml'
+
+    video = rest_utils.get_stream_link(server_url=server_url,
+                                       credentials=self.credentials,
+                                       device_id=self.agent_id,
+                                       video_format='mp4',
+                                       stream='primary')
+
+    cap = cv2.VideoCapture(video)
+    car_cascade = cv2.CascadeClassifier(haar_cascade)
 
     while self.running:
-      if current_time >= self.duration:
-        current_time = 0
-        track_id = str(uuid.uuid4())
+      current_time =  int(time.time()*1000000)
 
-      object_data = {
-        "id": self.engine_id,
-        "deviceId": self.agent_id,
-        "timestampUs": int(time.time()*1000000),
-        "durationUs": 1000000 * self.frequency + 5000000,
-        "objects": [
-          {
+      ret, frames = cap.read()
+      gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
+      gray = imutils.resize(gray, width=RESIZE)
+      (frame_h, frame_w) = gray.shape[:2]
+      cars = car_cascade.detectMultiScale(gray, 1.1, 1)
+
+
+      objects = []
+
+      for (x, y, w, h) in cars:
+        detected_object = {
             "typeId": "analytics.api.stub.object.type",
-            "trackId": track_id,
+            "trackId": str(uuid.uuid4()),
             "boundingBox": {
-              "x": 0.37,
-              "y": 0.33,
-              "width": 0.2,
-              "height": 0.33
+              "x": x/frame_w,
+              "y": y/frame_h,
+              "width": w/frame_w,
+              "height": h/frame_h
             }
           }
-        ]
-      }
-      self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data, engine_id=self.engine_id)
-      current_time += self.frequency
-      time.sleep(self.frequency)
+        objects.append(detected_object)
+
+        object_data = {
+          "id": self.engine_id,
+          "deviceId": self.agent_id,
+          "timestampUs": current_time,
+          "durationUs": 1000000,# 1000000 * self.frequency + 5000000,
+          "objects": objects
+        }
+
+        self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data,
+                                         engine_id=self.engine_id)
+
 
   def stop(self):
     self.running = False
@@ -82,7 +110,8 @@ class FakeObjectsIntegration(AnalyticsAPIIntegration):
     self.device_agents[device_agent_id] = DeviceAgent(agent_id=device_agent_id,
                                                       json_rpc_client=self.JSONRPC,
                                                       engine_id=engine_id,
-                                                      duration=10)
+                                                      duration=10,
+                                                      credentials=self.credentials)
     self.device_agents[device_agent_id].start()
 
   def on_device_agent_deletion(self, device_id):

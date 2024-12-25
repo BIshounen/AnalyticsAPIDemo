@@ -1,21 +1,22 @@
-import json
-from enum import verify
-
 import requests
 import urllib.parse
+import hashlib
+import base64
 
 REGISTER_PATH = "/rest/v4/analytics/integrations/*/requests"
 LOGIN_PATH = "/rest/v4/login/sessions"
 ENGINES_PATH = "/rest/v4/analytics/engines"
 DEVICE_AGENTS_PATH = "/rest/v4/analytics/engines/{engine_id}/deviceAgents"
+DEVICE_STREAM_PATH = "/rest/v4/devices/{device_id}/media.{video_format}"
+NONCE_PATH = "/api/getNonce"
 
 
-def _concat_url(server_url, path):
+def _concat_url(server_url, path) -> str:
     initial_url = urllib.parse.urlparse(server_url)
     print(initial_url)
     result = urllib.parse.urlunparse(initial_url._replace(path=path, scheme='https'))
     print(result)
-    return result
+    return str(result)
 
 
 def register_integration(server_url, integration_manifest, engine_manifest):
@@ -73,3 +74,35 @@ def authorize(server_url, credentials: dict):
         return result.json()['token']
     else:
         raise RuntimeError('Unable to authorize')
+
+def create_auth(server_url: str, credentials: dict, method: str):
+  response = requests.request(method='GET', url=_concat_url(server_url=server_url, path=NONCE_PATH), verify=False).json()
+  realm = response['reply']['realm']
+  nonce = response['reply']['nonce']
+
+  data = f"{credentials['username']}:{realm}:{credentials['password']}".encode()
+
+  md = hashlib.md5()
+  md.update(data)
+  digest = md.hexdigest()
+
+  md = hashlib.md5()
+  data = f"{method}:".encode()
+  md.update(data)
+  method = md.hexdigest()
+
+  md = hashlib.md5()
+  data = f"{digest}:{nonce}:{method}".encode()
+  md.update(data)
+  auth_digest = md.hexdigest()
+  auth = f"{credentials['username']}:{nonce}:{auth_digest}".encode()
+  return str(base64.b64encode(auth), 'utf-8')
+
+def get_stream_link(server_url, credentials, device_id: str, video_format: str, stream: str):
+  auth = create_auth(server_url, credentials, 'GET')
+  link = _concat_url(server_url=server_url,
+                     path=DEVICE_STREAM_PATH).format(device_id=device_id, video_format=video_format)
+
+  link += '?auth={auth}'.format(auth=auth)
+
+  return link
