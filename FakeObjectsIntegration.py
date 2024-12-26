@@ -9,6 +9,8 @@ import rest_utils
 from AnalyticsAPIIntegration import AnalyticsAPIIntegration
 from config import server_url
 
+from centroid_tracker import CentroidTracker
+
 RESIZE = 300
 
 
@@ -41,7 +43,7 @@ class DeviceAgent:
     cap = cv2.VideoCapture(video)
     car_cascade = cv2.CascadeClassifier(haar_cascade)
 
-    trackers = {}
+    tracker = CentroidTracker()
 
     while self.running:
       current_time =  int(time.time()*1000000)
@@ -55,39 +57,21 @@ class DeviceAgent:
 
       objects = []
 
-      for key, tracker in trackers.items():
-        (success, bbox) = tracker['tracker'].update(gray)
-        if success:
-          tracker['bbox'] = bbox
-        else:
-          trackers[key].pop()
+      tracks = tracker.update(cars)
 
-      for (x, y, w, h) in cars:
-
-        tracker_id = None
-
-        for key, tracker in trackers.items():
-          if (x, y, w, h) == tracker['bbox']:
-            tracker_id = key
-            break
-
-        if tracker_id is None:
-          tracker = cv2.TrackerMIL.create()
-          tracker.init(gray, (x, y, w, h))
-          tracker_id = str(uuid.uuid4())
-          trackers[tracker_id] = {'bbox': (x, y, w, h), 'tracker': tracker}
-
+      for (object_id, centroid) in tracks.items():
 
         detected_object = {
             "typeId": "analytics.api.stub.object.type",
-            "trackId": tracker_id,
+            "trackId": object_id,
             "boundingBox": {
-              "x": x/frame_w,
-              "y": y/frame_h,
-              "width": w/frame_w,
-              "height": h/frame_h
+              "x": (centroid[0] - 15)/frame_w,
+              "y": (centroid[1] - 15)/frame_h,
+              "width": 30/frame_w,
+              "height": 30/frame_h
             }
           }
+
         objects.append(detected_object)
 
         object_data = {
