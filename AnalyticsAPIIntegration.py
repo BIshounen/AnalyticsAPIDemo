@@ -1,7 +1,6 @@
 import abc
 import asyncio
 import os
-from typing import Hashable
 import rest_utils
 import json
 

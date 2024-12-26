@@ -1,5 +1,3 @@
-from config import server_url
-from integration import Integration
 import config
 import json
 from FakeObjectsIntegration import FakeObjectsIntegration

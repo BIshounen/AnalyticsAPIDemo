@@ -4,7 +4,6 @@ import imutils
 from threading import Thread
 
 import cv2
-import argparse
 
 import rest_utils
 from AnalyticsAPIIntegration import AnalyticsAPIIntegration

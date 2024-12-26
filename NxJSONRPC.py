@@ -1,7 +1,6 @@
 import urllib.parse
 import json
 import uuid
-from crypt import methods
 from threading import Thread
 from AnalyticsAPIInterface import AnalyticsAPIInterface
 
