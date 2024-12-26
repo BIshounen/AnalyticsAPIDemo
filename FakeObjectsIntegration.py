@@ -42,6 +42,8 @@ class DeviceAgent:
     cap = cv2.VideoCapture(video)
     car_cascade = cv2.CascadeClassifier(haar_cascade)
 
+    trackers = {}
+
     while self.running:
       current_time =  int(time.time()*1000000)
 
@@ -54,10 +56,32 @@ class DeviceAgent:
 
       objects = []
 
+      for key, tracker in trackers.items():
+        (success, bbox) = tracker['tracker'].update(gray)
+        if success:
+          tracker['bbox'] = bbox
+        else:
+          trackers[key].pop()
+
       for (x, y, w, h) in cars:
+
+        tracker_id = None
+
+        for key, tracker in trackers.items():
+          if (x, y, w, h) == tracker['bbox']:
+            tracker_id = key
+            break
+
+        if tracker_id is None:
+          tracker = cv2.TrackerMIL.create()
+          tracker.init(gray, (x, y, w, h))
+          tracker_id = str(uuid.uuid4())
+          trackers[tracker_id] = {'bbox': (x, y, w, h), 'tracker': tracker}
+
+
         detected_object = {
             "typeId": "analytics.api.stub.object.type",
-            "trackId": str(uuid.uuid4()),
+            "trackId": tracker_id,
             "boundingBox": {
               "x": x/frame_w,
               "y": y/frame_h,
@@ -100,6 +124,7 @@ class FakeObjectsIntegration(AnalyticsAPIIntegration):
     self.device_agents = {}
 
     self.device_agent_manifest = device_agent_manifest
+    print(cv2.__version__)
 
   def get_device_agent_manifest(self, device_parameters: dict) -> dict:
     return self.device_agent_manifest
