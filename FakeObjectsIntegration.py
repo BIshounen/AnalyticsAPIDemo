@@ -2,6 +2,7 @@ import time
 import uuid
 import imutils
 from threading import Thread
+import tensorflow as tf
 
 import cv2
 
@@ -32,8 +33,6 @@ class DeviceAgent:
 
   def send_object(self):
 
-    haar_cascade = 'cars.xml'
-
     video = rest_utils.get_stream_link(server_url=server_url,
                                        credentials=self.credentials,
                                        device_id=self.agent_id,
@@ -41,47 +40,85 @@ class DeviceAgent:
                                        stream='primary')
 
     cap = cv2.VideoCapture(video)
-    car_cascade = cv2.CascadeClassifier(haar_cascade)
+
+    with tf.io.gfile.GFile('frozen_inference_graph.pb', 'rb') as f:
+      graph_def = tf.compat.v1.GraphDef()
+      graph_def.ParseFromString(f.read())
 
     tracker = CentroidTracker(max_disappeared=5)
 
     while self.running:
       current_time =  int(time.time()*1000000)
+      with tf.compat.v1.Session() as sess:
+        # Restore session
+        sess.graph.as_default()
+        tf.import_graph_def(graph_def, name='')
 
-      ret, frames = cap.read()
-      gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-      gray = imutils.resize(gray, width=RESIZE)
-      (frame_h, frame_w) = gray.shape[:2]
-      cars = car_cascade.detectMultiScale(gray, 1.1, 1)
-      objects = []
+        ret, frames = cap.read()
+        if not ret:
+          continue
+        (frame_h, frame_w) = frames.shape[:2]
 
-      tracks = tracker.update(cars)
+        objects = []
 
-      for (object_id, centroid) in tracks.items():
+        rows = frames.shape[0]
+        cols = frames.shape[1]
+        inp = cv2.resize(frames, (RESIZE, RESIZE))
+        inp = inp[:, :, [2, 1, 0]]  # BGR2RGB
 
-        detected_object = {
-            "typeId": "analytics.api.stub.object.type",
-            "trackId": object_id,
-            "boundingBox": {
-              "x": (centroid[0] - 15)/frame_w,
-              "y": (centroid[1] - 15)/frame_h,
-              "width": 30/frame_w,
-              "height": 30/frame_h
+        out = sess.run([sess.graph.get_tensor_by_name('num_detections:0'),
+                        sess.graph.get_tensor_by_name('detection_scores:0'),
+                        sess.graph.get_tensor_by_name('detection_boxes:0'),
+                        sess.graph.get_tensor_by_name('detection_classes:0')],
+                       feed_dict={'image_tensor:0': inp.reshape(1, inp.shape[0], inp.shape[1], 3)})
+
+        num_detections = int(out[0][0])
+
+        detections = []
+
+        for i in range(num_detections):
+          class_id = int(out[3][0][i])
+          if class_id not in [2, 3, 4, 6]:
+            continue
+          score = float(out[1][0][i])
+          bbox = [float(v) for v in out[2][0][i]]
+          if score > 0.3:
+            x = bbox[1] * cols
+            y = bbox[0] * rows
+            right = bbox[3] * cols
+            bottom = bbox[2] * rows
+            w = right - x
+            h = bottom - y
+
+            detections.append((int(x), int(y), int(w), int(h)))
+
+        tracks = tracker.update(detections)
+
+        for (object_id, centroid) in tracks.items():
+
+          detected_object = {
+              "typeId": "analytics.api.stub.object.type",
+              "trackId": object_id,
+              "boundingBox": {
+                "x": (centroid[0] - 15)/frame_w,
+                "y": (centroid[1] - 15)/frame_h,
+                "width": 30/frame_w,
+                "height": 30/frame_h
+              }
             }
+
+          objects.append(detected_object)
+
+          object_data = {
+            "id": self.engine_id,
+            "deviceId": self.agent_id,
+            "timestampUs": current_time,
+            "durationUs": 1000000,# 1000000 * self.frequency + 5000000,
+            "objects": objects
           }
 
-        objects.append(detected_object)
-
-        object_data = {
-          "id": self.engine_id,
-          "deviceId": self.agent_id,
-          "timestampUs": current_time,
-          "durationUs": 1000000,# 1000000 * self.frequency + 5000000,
-          "objects": objects
-        }
-
-        self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data,
-                                         engine_id=self.engine_id)
+          self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data,
+                                           engine_id=self.engine_id)
 
 
   def stop(self):
