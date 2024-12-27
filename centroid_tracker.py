@@ -33,7 +33,10 @@ class CentroidTracker:
 		# initialize an array of input centroids for the current frame
 		input_centroids = np.zeros((len(rects), 2), dtype="int")
 
-		for (i, (startX, startY, endX, endY)) in enumerate(rects):
+		for (i, (startX, startY, w, h)) in enumerate(rects):
+
+			endX = startX + w
+			endY = startY + h
 
 			c_x = int((startX + endX) / 2.0)
 			c_y = int((startY + endY) / 2.0)

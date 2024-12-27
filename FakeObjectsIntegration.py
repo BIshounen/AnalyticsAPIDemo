@@ -43,7 +43,7 @@ class DeviceAgent:
     cap = cv2.VideoCapture(video)
     car_cascade = cv2.CascadeClassifier(haar_cascade)
 
-    tracker = CentroidTracker()
+    tracker = CentroidTracker(max_disappeared=5)
 
     while self.running:
       current_time =  int(time.time()*1000000)
@@ -53,8 +53,6 @@ class DeviceAgent:
       gray = imutils.resize(gray, width=RESIZE)
       (frame_h, frame_w) = gray.shape[:2]
       cars = car_cascade.detectMultiScale(gray, 1.1, 1)
-
-
       objects = []
 
       tracks = tracker.update(cars)
