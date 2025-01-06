@@ -1,5 +1,4 @@
 import time
-import uuid
 import imutils
 from threading import Thread
 
@@ -57,31 +56,32 @@ class DeviceAgent:
 
       tracks = tracker.update(cars)
 
-      for (object_id, centroid) in tracks.items():
+      for track_id, track in tracks.items():
+        x, y, w, h = track
 
         detected_object = {
             "typeId": "analytics.api.stub.object.type",
-            "trackId": object_id,
+            "trackId": track_id,
             "boundingBox": {
-              "x": (centroid[0] - 15)/frame_w,
-              "y": (centroid[1] - 15)/frame_h,
-              "width": 30/frame_w,
-              "height": 30/frame_h
+              "x": float(x/frame_w),
+              "y": float(y/frame_h),
+              "width": w/frame_w,
+              "height": h/frame_h
             }
           }
 
         objects.append(detected_object)
 
-        object_data = {
-          "id": self.engine_id,
-          "deviceId": self.agent_id,
-          "timestampUs": current_time,
-          "durationUs": 1000000,# 1000000 * self.frequency + 5000000,
-          "objects": objects
-        }
+      object_data = {
+        "id": self.engine_id,
+        "deviceId": self.agent_id,
+        "timestampUs": current_time,
+        "durationUs": 1000000,# 1000000 * self.frequency + 5000000,
+        "objects": objects
+      }
 
-        self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data,
-                                         engine_id=self.engine_id)
+      self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data,
+                                       engine_id=self.engine_id)
 
 
   def stop(self):
