@@ -22,6 +22,8 @@ METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.deviceAg
 METHOD_UPDATE_ENGINE_SETTINGS = 'rest.v4.analytics.engines.settings.update'
 METHOD_NOTIFY_ENGINE_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.settings.notifyActiveSettingChanged'
 METHOD_CREATE_OBJECT_METADATA = "rest.v4.analytics.engines.deviceAgents.metadata.object.create"
+METHOD_CREATE_BEST_SHOT_METHOD = "rest.v4.analytics.engines.deviceAgents.metadata.bestShot.create"
+
 
 def _concat_url(server_url, path):
   initial_url = urllib.parse.urlparse(server_url)
@@ -231,7 +233,12 @@ class NxJSONRPC:
     }
     self.respond(message=respond, message_id=message['id'])
 
-  def send_object(self, engine_id, device_agent_id, object_data):
+  def send_object(self, object_data):
     data = object_data
 
     self.notify(message=data, method=METHOD_CREATE_OBJECT_METADATA)
+
+  def send_best_shot(self, best_shot):
+    data = best_shot
+
+    self.notify(message=data, method=METHOD_CREATE_BEST_SHOT_METHOD)

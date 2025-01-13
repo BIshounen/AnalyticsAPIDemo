@@ -1,6 +1,7 @@
 import config
 import json
 from FakeObjectsIntegration import FakeObjectsIntegration
+import os
 
 INTEGRATION_MANIFEST_PATH = "manifests/integration_manifest.json"
 ENGINE_MANIFEST_PATH = "manifests/engine_manifest.json"
@@ -15,13 +16,6 @@ if __name__ == "__main__":
     engine_manifest = json.load(f_e)
     agent_manifest = json.load(f_a)
 
-  # integration = Integration(server_url=config.server_url,
-  #                           integration_manifest=integration_manifest,
-  #                           engine_manifest=engine_manifest,
-  #                           device_agent_manifest=agent_manifest,
-  #                           credentials_path=CREDENTIALS_PATH,
-  #                           auth_refresh=100
-  #                           )
 
   integration = FakeObjectsIntegration(server_url=config.server_url,
                                         integration_manifest=integration_manifest,

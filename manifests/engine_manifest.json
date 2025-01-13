@@ -5,7 +5,12 @@
         [
             {
                 "id": "analytics.api.stub.object.type",
-                "name": "Analytics API stub Object Type"
+                "name": "Analytics API stub Object Type",
+                "icon": "bytedance.iconpark.palace",
+                "attributes": [
+                    {"id": "track_id", "type": "String", "name":  "Track ID"},
+                    {"id": "object_type", "type": "String", "name":  "Type"}
+                ]
             },
             {
                 "id": "analytics.api.stub.objectTypeWithActions",

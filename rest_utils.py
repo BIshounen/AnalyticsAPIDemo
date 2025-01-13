@@ -9,12 +9,13 @@ ENGINES_PATH = "/rest/v4/analytics/engines"
 DEVICE_AGENTS_PATH = "/rest/v4/analytics/engines/{engine_id}/deviceAgents"
 DEVICE_STREAM_PATH = "/rest/v4/devices/{device_id}/media.{video_format}"
 NONCE_PATH = "/api/getNonce"
+RTSP_PATH = "/{device_id}"
 
 
-def _concat_url(server_url, path) -> str:
+def _concat_url(server_url, path, scheme='https') -> str:
     initial_url = urllib.parse.urlparse(server_url)
     print(initial_url)
-    result = urllib.parse.urlunparse(initial_url._replace(path=path, scheme='https'))
+    result = urllib.parse.urlunparse(initial_url._replace(path=path, scheme=scheme))
     print(result)
     return str(result)
 
@@ -98,11 +99,22 @@ def create_auth(server_url: str, credentials: dict, method: str):
   auth = f"{credentials['username']}:{nonce}:{auth_digest}".encode()
   return str(base64.b64encode(auth), 'utf-8')
 
-def get_stream_link(server_url, credentials, device_id: str, video_format: str, stream: str):
+def get_stream_link(server_url, credentials, device_id: str, video_format: str):
   auth = create_auth(server_url, credentials, 'GET')
   link = _concat_url(server_url=server_url,
                      path=DEVICE_STREAM_PATH).format(device_id=device_id, video_format=video_format)
 
   link += '?auth={auth}'.format(auth=auth)
+
+  return link
+
+
+def get_rtsp_link(server_url, credentials, device_id: str):
+  auth = create_auth(server_url, credentials, 'PLAY')
+  link = _concat_url(server_url=server_url, scheme='rtsp',
+                     path=RTSP_PATH).format(device_id=device_id)
+
+  link += '?auth={auth}'.format(auth=auth)
+  link += '&fps=30'
 
   return link

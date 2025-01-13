@@ -1,16 +1,20 @@
 import time
-import imutils
 from threading import Thread
+from collections import defaultdict
+import uuid
+from turtledemo.penrose import start
 
 import cv2
+
+from ultralytics import YOLO
 
 import rest_utils
 from AnalyticsAPIIntegration import AnalyticsAPIIntegration
 from config import server_url
 
-from centroid_tracker import CentroidTracker
 
 RESIZE = 300
+yolo = YOLO('yolov8m.pt')
 
 
 class DeviceAgent:
@@ -31,57 +35,91 @@ class DeviceAgent:
 
   def send_object(self):
 
-    haar_cascade = 'cars.xml'
-
-    video = rest_utils.get_stream_link(server_url=server_url,
-                                       credentials=self.credentials,
-                                       device_id=self.agent_id,
-                                       video_format='mp4',
-                                       stream='primary')
+    video = rest_utils.get_rtsp_link(server_url=server_url,
+                                     credentials=self.credentials,
+                                     device_id=self.agent_id)
 
     cap = cv2.VideoCapture(video)
-    car_cascade = cv2.CascadeClassifier(haar_cascade)
 
-    tracker = CentroidTracker(max_disappeared=5)
+
+    track_guids = defaultdict(lambda: uuid.uuid4())
+    start_time = 0.0
 
     while self.running:
-      current_time =  int(time.time()*1000000)
 
-      ret, frames = cap.read()
-      gray = cv2.cvtColor(frames, cv2.COLOR_BGR2GRAY)
-      gray = imutils.resize(gray, width=RESIZE)
-      (frame_h, frame_w) = gray.shape[:2]
-      cars = car_cascade.detectMultiScale(gray, 1.1, 1)
+      success, frames = cap.read()
+      pos_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
+      if pos_msec == 0:
+        start_time = time.time()*1000000
+      success = cap.grab()
+      current_time = time.time()*1000000
+      if not success:
+        continue
+      cap.retrieve(frames)
+      print(pos_msec)
+      print(current_time)
+      print(time.time()*1000000)
       objects = []
+      if success:
+        results = yolo.track(frames, persist=True, device='mps')
+        boxes = results[0].boxes.xywhn.cpu()
 
-      tracks = tracker.update(cars)
+        if results[0].boxes.id is None:
+          continue
 
-      for track_id, track in tracks.items():
-        x, y, w, h = track
+        track_ids = results[0].boxes.id.int().cpu().tolist()
+        name_ids = results[0].boxes.cls.cpu().tolist()
 
-        detected_object = {
-            "typeId": "analytics.api.stub.object.type",
-            "trackId": track_id,
-            "boundingBox": {
-              "x": float(x/frame_w),
-              "y": float(y/frame_h),
-              "width": w/frame_w,
-              "height": h/frame_h
+        for box, track_id, name_id in zip(boxes, track_ids, name_ids):
+          x, y, w, h = box
+          track_guid = track_guids[track_id]
+
+          detected_object = {
+              "typeId": "analytics.api.stub.object.type",
+              "trackId": str(track_guid),
+              "boundingBox": {
+                "x": float(x),
+                "y": float(y),
+                "width": float(w),
+                "height": float(h)
+              },
+            "attributes": [
+              {"name":"nx.sys.color", "value": "White"},
+              {"name": "track_id", "value": str(track_guid)},
+              {"name": "object_type", "value": str(results[0].names[int(name_id)])}
+            ]
             }
-          }
 
-        objects.append(detected_object)
+          objects.append(detected_object)
+        #
+        # if track_id not in sent_tracks:
+        #   best_shot = {
+        #     "id": self.engine_id,
+        #     "deviceId": self.agent_id,
+        #     "trackId": track_id,
+        #     "timestampUs": current_time,
+        #     "boundingBox": {
+        #       "x": float(x/frame_w),
+        #       "y": float(y/frame_h),
+        #       "width": w/frame_w,
+        #       "height": h/frame_h
+        #     },
+        #   }
+        #
+        #   self.json_rpc_client.send_best_shot(best_shot=best_shot)
+        #   sent_tracks.append(track_id)
 
-      object_data = {
-        "id": self.engine_id,
-        "deviceId": self.agent_id,
-        "timestampUs": current_time,
-        "durationUs": 1000000,# 1000000 * self.frequency + 5000000,
-        "objects": objects
-      }
+        object_data = {
+          "id": self.engine_id,
+          "deviceId": self.agent_id,
+          "timestampUs": int(current_time),
+          "durationUs": 100000,
+          "objects": objects
+        }
 
-      self.json_rpc_client.send_object(device_agent_id=self.agent_id, object_data=object_data,
-                                       engine_id=self.engine_id)
+        # annotated_frame = results[0].plot()
+        # cv2.imwrite('test.png', annotated_frame)
+        self.json_rpc_client.send_object(object_data=object_data)
 
 
   def stop(self):

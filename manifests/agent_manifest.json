@@ -3,8 +3,7 @@
     [
         {
             "objectTypeId": "analytics.api.stub.object.type",
-            "attributes": [
-            ]
+            "attributes": ["nx.sys.color", "track_id", "object_type"]
         },
         {
             "objectTypeId": "analytics.api.stub.objectTypeWithActions",
