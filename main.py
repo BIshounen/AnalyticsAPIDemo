@@ -1,7 +1,6 @@
 import config
 import json
 from FakeObjectsIntegration import FakeObjectsIntegration
-import os
 
 INTEGRATION_MANIFEST_PATH = "manifests/integration_manifest.json"
 ENGINE_MANIFEST_PATH = "manifests/engine_manifest.json"

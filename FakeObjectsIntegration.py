@@ -2,7 +2,6 @@ import time
 from threading import Thread
 from collections import defaultdict
 import uuid
-from turtledemo.penrose import start
 
 import cv2
 
