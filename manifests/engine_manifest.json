@@ -10,8 +10,8 @@
                 "attributes": [
                     {"id": "track_id", "type": "String", "name":  "Track ID"},
                     {"id": "object_type", "type": "String", "name":  "Type"},
-                    {"id": "pos_latitude", "type": "Number", "name":  "Type"},
-                    {"id": "pos_longitude", "type": "Number", "name":  "Type"}
+                    {"id": "pos_latitude", "type": "Number", "name":  "Latitude", "subtype":  "float"},
+                    {"id": "pos_longitude", "type": "Number", "name":  "Longitude", "subtype": "float"}
                 ]
             },
             {

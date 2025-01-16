@@ -120,6 +120,8 @@ class DeviceAgent:
             ]
 
             lat, lon = get_pixel_to_coordinates(known_points=known_pixels, pixel=(x + w/2, y + h/2))
+            lat = round(float(lat), 3)
+            lon = round(float(lon), 3)
 
           detected_object = {
               "typeId": "analytics.api.stub.object.type",
@@ -134,8 +136,8 @@ class DeviceAgent:
               {"name":"nx.sys.color", "value": "White"},
               {"name": "track_id", "value": str(track_guid)},
               {"name": "object_type", "value": str(results[0].names[int(name_id)])},
-              {"name": "pos_latitude", "value": round(float(lat), 3)},
-              {"name": "pos_longitude", "value": round(float(lon), 3)}
+              {"name": "pos_latitude", "value": str(lat)},
+              {"name": "pos_longitude", "value": str(lon)}
             ]
             }
 
