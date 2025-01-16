@@ -5,12 +5,15 @@ import uuid
 
 import cv2
 
+import json
+
 from ultralytics import YOLO
 
 import rest_utils
 from AnalyticsAPIIntegration import AnalyticsAPIIntegration
 from config import server_url
 
+from coordinates_tranform import get_pixel_to_coordinates
 
 RESIZE = 300
 yolo = YOLO('yolov8m.pt')
@@ -29,8 +32,35 @@ class DeviceAgent:
     self.thread = Thread(target=self.send_object)
     self.credentials = credentials
 
+    self.settings = {
+      "figure": None,
+      'coords_1_lat': 39.110999999999997,
+      'coords_1_long': -100.487779,
+      'coords_2_lat': 39.110999999999997,
+      'coords_2_long': -100.487779,
+      'coords_3_lat': 39.110999999999997,
+      'coords_3_long': -100.487779
+    }
+
   def start(self):
     self.thread.start()
+
+  def set_settings(self, values):
+    new_values = {}
+    try:
+      positions = json.loads(values['coordinates_position'])
+      new_values['coordinates_position'] = {}
+      new_values['coordinates_position']['figure'] = positions['figure']
+      new_values['coords_1_lat'] = float(values['coords_1_lat'])
+      new_values['coords_1_long'] = float(values['coords_1_long'])
+      new_values['coords_2_lat'] = float(values['coords_2_lat'])
+      new_values['coords_2_long'] = float(values['coords_2_long'])
+      new_values['coords_3_lat'] = float(values['coords_3_lat'])
+      new_values['coords_3_long'] = float(values['coords_3_long'])
+    except KeyError:
+      return
+
+    self.settings = new_values
 
   def send_object(self):
 
@@ -55,9 +85,9 @@ class DeviceAgent:
       if not success:
         continue
       cap.retrieve(frames)
-      print(pos_msec)
-      print(current_time)
-      print(time.time()*1000000)
+      # print(pos_msec)
+      # print(current_time)
+      # print(time.time()*1000000)
       objects = []
       if success:
         results = yolo.track(frames, persist=True, device='mps')
@@ -73,6 +103,24 @@ class DeviceAgent:
           x, y, w, h = box
           track_guid = track_guids[track_id]
 
+          lat = None
+          lon = None
+
+          if 'coordinates_position' in self.settings and self.settings['coordinates_position']['figure'] is not None:
+            known_pixels = [
+              {"pixel": (self.settings['coordinates_position']['figure']['points'][0][0],
+                         self.settings['coordinates_position']['figure']['points'][0][1]),
+               "lat_lon": (self.settings['coords_1_lat'], self.settings['coords_1_long'])},
+              {"pixel": (self.settings['coordinates_position']['figure']['points'][1][0],
+                         self.settings['coordinates_position']['figure']['points'][1][1]),
+               "lat_lon": (self.settings['coords_2_lat'], self.settings['coords_2_long'])},
+              {"pixel": (self.settings['coordinates_position']['figure']['points'][2][0],
+                         self.settings['coordinates_position']['figure']['points'][2][1]),
+               "lat_lon": (self.settings['coords_3_lat'], self.settings['coords_3_long'])}
+            ]
+
+            lat, lon = get_pixel_to_coordinates(known_points=known_pixels, pixel=(x + w/2, y + h/2))
+
           detected_object = {
               "typeId": "analytics.api.stub.object.type",
               "trackId": str(track_guid),
@@ -85,7 +133,9 @@ class DeviceAgent:
             "attributes": [
               {"name":"nx.sys.color", "value": "White"},
               {"name": "track_id", "value": str(track_guid)},
-              {"name": "object_type", "value": str(results[0].names[int(name_id)])}
+              {"name": "object_type", "value": str(results[0].names[int(name_id)])},
+              {"name": "pos_latitude", "value": round(float(lat), 3)},
+              {"name": "pos_longitude", "value": round(float(lon), 3)}
             ]
             }
 
@@ -160,19 +210,25 @@ class FakeObjectsIntegration(AnalyticsAPIIntegration):
   def on_device_agent_deletion(self, device_id):
     self.device_agents[device_id].stop()
 
-  def on_agent_active_settings_change(self, parameters):
-
+  def on_agent_active_settings_change(self, parameters, device_id):
+    self.device_agents[device_id].set_settings(parameters['settingsValues'])
     return {
       'settingsValues': parameters['settingsValues'],
       'settingsModel': self.engine_manifest['deviceAgentSettingsModel']
     }
 
-  def on_agent_settings_update(self, parameters):
-
-    return {
-      'settingsValues': parameters['settingsValues'],
-      'settingsModel': self.engine_manifest['deviceAgentSettingsModel']
-    }
+  def on_agent_settings_update(self, parameters, device_id):
+    if device_id in self.device_agents:
+      self.device_agents[device_id].set_settings(parameters['settingsValues'])
+      return {
+        'settingsValues': self.device_agents[device_id].settings,
+        'settingsModel': self.engine_manifest['deviceAgentSettingsModel']
+      }
+    else:
+      return {
+        'settingsValues': parameters['settingsValues'],
+        'settingsModel': self.engine_manifest['deviceAgentSettingsModel']
+      }
 
   def on_engine_settings_update(self, parameters):
 

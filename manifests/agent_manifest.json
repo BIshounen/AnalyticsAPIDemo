@@ -3,7 +3,7 @@
     [
         {
             "objectTypeId": "analytics.api.stub.object.type",
-            "attributes": ["nx.sys.color", "track_id", "object_type"]
+            "attributes": ["nx.sys.color", "track_id", "object_type", "pos_latitude", "pos_longitude"]
         },
         {
             "objectTypeId": "analytics.api.stub.objectTypeWithActions",

@@ -66,11 +66,11 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_agent_settings_update(self, parameters):
+  def on_agent_settings_update(self, parameters, device_id):
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_agent_active_settings_change(self, parameters):
+  def on_agent_active_settings_change(self, parameters, device_id):
     raise NotImplemented
 
   @abc.abstractmethod
@@ -84,7 +84,7 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
   def get_integration_engine_side_settings(self, parameters):
     return {}
 
-  def get_integration_device_agent_side_settings(self, parameters):
+  def get_integration_device_agent_side_settings(self, parameters, device_id):
     return {}
 
   async def main(self):
@@ -95,8 +95,6 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
     approval = self.ApprovalAwaitable(self)
     await approval
     print('approved')
-    await self.JSONRPC.subscribe_to_analytics(self.integration_id)
-    print('subscribed')
     device_agents = rest_utils.get_device_agents(server_url=self.server_url,
                                          credentials=self.credentials,
                                           integration_id=self.integration_id)
@@ -112,6 +110,9 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
           }
         }
         self.on_device_agent_created(device_parameters=device_parameters)
+
+    await self.JSONRPC.subscribe_to_analytics(self.integration_id)
+    print('subscribed')
 
 
   def run(self):

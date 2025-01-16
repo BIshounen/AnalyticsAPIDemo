@@ -194,12 +194,14 @@ class NxJSONRPC:
 
   def react_on_integration_device_agent_side_settings(self, message):
     parameters = message['params']['parameters']
-    settings = self.integration.get_integration_device_agent_side_settings(parameters)
+    device_id = message['params']['target']['deviceId']
+    settings = self.integration.get_integration_device_agent_side_settings(parameters, device_id)
     self.respond(message=settings, message_id=message['id'])
 
   def react_on_agent_settings_update(self, message):
     parameters = message['params']['parameters']
-    data = self.integration.on_agent_settings_update(parameters)
+    device_id = message['params']['target']['deviceId']
+    data = self.integration.on_agent_settings_update(parameters, device_id)
     respond = {
       'type': 'ok',
       'data': data
@@ -208,7 +210,8 @@ class NxJSONRPC:
 
   def react_on_agent_active_settings(self, message):
     parameters = message['params']['parameters']
-    data = self.integration.on_agent_active_settings_change(parameters)
+    device_id = message['target']['deviceId']
+    data = self.integration.on_agent_active_settings_change(parameters, device_id)
     respond = {
       'type': 'ok',
       'data': data
