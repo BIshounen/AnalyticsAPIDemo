@@ -6,7 +6,6 @@ import uuid
 import cv2
 
 import json
-
 from ultralytics import YOLO
 
 import rest_utils
@@ -14,6 +13,8 @@ from AnalyticsAPIIntegration import AnalyticsAPIIntegration
 from config import server_url
 
 from coordinates_tranform import get_pixel_to_coordinates
+
+import queue
 
 RESIZE = 300
 yolo = YOLO('yolov8m.pt')
@@ -42,6 +43,10 @@ class DeviceAgent:
       'coords_3_long': -100.487779
     }
 
+    self.cap = None
+    self.q = queue.Queue()
+    self.current_time = 0
+
   def start(self):
     self.thread.start()
 
@@ -62,32 +67,41 @@ class DeviceAgent:
 
     self.settings = new_values
 
-  def send_object(self):
+  def cap_reader(self):
 
     video = rest_utils.get_rtsp_link(server_url=server_url,
                                      credentials=self.credentials,
                                      device_id=self.agent_id)
 
-    cap = cv2.VideoCapture(video)
+    self.cap = cv2.VideoCapture(video)
 
+    while self.running:
+      success, frame = self.cap.read()
+      current_time = int(time.time()*1000000 - 300000)
+
+      if success:
+        if not self.q.empty():
+          try:
+            self.q.get_nowait()  # discard previous (unprocessed) frame
+          except queue.Empty:
+            pass
+        self.q.put((success, frame, current_time))
+
+  def send_object(self):
+
+
+    read_thread = Thread(target=self.cap_reader)
+    read_thread.daemon = True
+    read_thread.start()
 
     track_guids = defaultdict(lambda: uuid.uuid4())
-    start_time = 0.0
 
     while self.running:
 
-      success, frames = cap.read()
-      pos_msec = cap.get(cv2.CAP_PROP_POS_MSEC)
-      if pos_msec == 0:
-        start_time = time.time()*1000000
-      success = cap.grab()
-      current_time = time.time()*1000000
+      success, frames, current_time = self.q.get()
       if not success:
         continue
-      cap.retrieve(frames)
-      # print(pos_msec)
-      # print(current_time)
-      # print(time.time()*1000000)
+
       objects = []
       if success:
         results = yolo.track(frames, persist=True, device='mps')
@@ -127,8 +141,8 @@ class DeviceAgent:
               "typeId": "analytics.api.stub.object.type",
               "trackId": str(track_guid),
               "boundingBox": {
-                "x": float(x),
-                "y": float(y),
+                "x": float(x) - float(w)/2,
+                "y": float(y) - float(h)/2,
                 "width": float(w),
                 "height": float(h)
               },
@@ -163,8 +177,8 @@ class DeviceAgent:
         object_data = {
           "id": self.engine_id,
           "deviceId": self.agent_id,
-          "timestampUs": int(current_time),
-          "durationUs": 100000,
+          "timestampUs": current_time,
+          "durationUs": 10000,
           "objects": objects
         }
 
