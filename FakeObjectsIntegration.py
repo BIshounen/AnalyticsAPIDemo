@@ -185,7 +185,7 @@ class DeviceAgent:
           #   sent_best_shots.append(str(track_guid))
           #
           #   self.json_rpc_client.send_best_shot(best_shot=best_shot)
-            self.json_rpc_client.send_title_image(title_image=title)
+          #   self.json_rpc_client.send_title_image(title_image=title)
 
         object_data = {
           "id": self.engine_id,
