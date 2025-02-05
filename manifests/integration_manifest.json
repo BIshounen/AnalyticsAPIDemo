@@ -1,8 +1,7 @@
 {
-    "id": "nx.analytics_api_fake_objects",
-    "name": "Analytics API fake detection",
-    "description": "Test application for displaying bounding boxes",
+    "id": "nx.analytics_api_yolo_detection",
+    "name": "Analytics API yolo detection",
+    "description": "Application for displaying bounding boxes around yolo detected objects",
     "vendor": "Network Optix",
     "version": "0.0.1"
 }
-

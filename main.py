@@ -5,7 +5,7 @@ from FakeObjectsIntegration import FakeObjectsIntegration
 INTEGRATION_MANIFEST_PATH = "manifests/integration_manifest.json"
 ENGINE_MANIFEST_PATH = "manifests/engine_manifest.json"
 AGENT_MANIFEST_PATH = "manifests/agent_manifest.json"
-CREDENTIALS_PATH = ".credentials"
+CREDENTIALS_PATH = ".credentials_"
 
 if __name__ == "__main__":
   with (open(INTEGRATION_MANIFEST_PATH, 'r') as f_i,

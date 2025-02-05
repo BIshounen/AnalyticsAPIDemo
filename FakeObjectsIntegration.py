@@ -77,7 +77,7 @@ class DeviceAgent:
 
     while self.running:
       success, frame = self.cap.read()
-      current_time = int(time.time()*1000000 - 300000)
+      current_time = int(time.time()*1000000 - 500000)
 
       if success:
         if not self.q.empty():
@@ -95,6 +95,8 @@ class DeviceAgent:
     read_thread.start()
 
     track_guids = defaultdict(lambda: uuid.uuid4())
+
+    # sent_best_shots = []
 
     while self.running:
 
@@ -148,31 +150,42 @@ class DeviceAgent:
               },
             "attributes": [
               {"name":"nx.sys.color", "value": "White"},
-              {"name": "track_id", "value": str(track_guid)},
-              {"name": "object_type", "value": str(results[0].names[int(name_id)])},
-              {"name": "pos_latitude", "value": str(lat)},
-              {"name": "pos_longitude", "value": str(lon)}
+              {"name": "TrackID", "value": str(track_guid)},
+              {"name": "Type", "value": str(results[0].names[int(name_id)])},
+              {"name": "Latitude", "value": str(lat)},
+              {"name": "Longitude", "value": str(lon)}
             ]
             }
 
           objects.append(detected_object)
-        #
-        # if track_id not in sent_tracks:
-        #   best_shot = {
-        #     "id": self.engine_id,
-        #     "deviceId": self.agent_id,
-        #     "trackId": track_id,
-        #     "timestampUs": current_time,
-        #     "boundingBox": {
-        #       "x": float(x/frame_w),
-        #       "y": float(y/frame_h),
-        #       "width": w/frame_w,
-        #       "height": h/frame_h
-        #     },
-        #   }
-        #
-        #   self.json_rpc_client.send_best_shot(best_shot=best_shot)
-        #   sent_tracks.append(track_id)
+
+          # if str(track_guid) not in sent_best_shots:
+          #   best_shot = {
+          #     "id": self.engine_id,
+          #     "deviceId": self.agent_id,
+          #     "trackId": str(track_guid),
+          #     "timestampUs": current_time,
+          #     "boundingBox": {
+          #       "x": float(x) - float(w)/2,
+          #       "y": float(y) - float(h)/2,
+          #       "width": float(w),
+          #       "height": float(h)
+          #     },
+          #   }
+          #
+          #   title = {
+          #     "id": self.engine_id,
+          #     "deviceId": self.agent_id,
+          #     "trackId": str(track_guid),
+          #     "timestampUs": current_time,
+          #     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/2017_Washington_License_Plate.jpg/1600px-2017_Washington_License_Plate.jpg",
+          #     "text": "A12345BC"
+          #   }
+          #
+          #   sent_best_shots.append(str(track_guid))
+          #
+          #   self.json_rpc_client.send_best_shot(best_shot=best_shot)
+            self.json_rpc_client.send_title_image(title_image=title)
 
         object_data = {
           "id": self.engine_id,

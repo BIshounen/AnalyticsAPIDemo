@@ -8,7 +8,7 @@
                 "name": "Analytics API stub Object Type",
                 "icon": "bytedance.iconpark.palace",
                 "attributes": [
-                    {"id": "track_id", "type": "String", "name":  "Track ID"},
+                    {"id": "track_id", "type": "String", "name":  "TrackID"},
                     {"id": "object_type", "type": "String", "name":  "Type"},
                     {"id": "pos_latitude", "type": "Number", "name":  "Latitude", "subtype":  "float"},
                     {"id": "pos_longitude", "type": "Number", "name":  "Longitude", "subtype": "float"}

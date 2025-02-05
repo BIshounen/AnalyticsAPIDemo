@@ -23,6 +23,7 @@ METHOD_UPDATE_ENGINE_SETTINGS = 'rest.v4.analytics.engines.settings.update'
 METHOD_NOTIFY_ENGINE_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.settings.notifyActiveSettingChanged'
 METHOD_CREATE_OBJECT_METADATA = "rest.v4.analytics.engines.deviceAgents.metadata.object.create"
 METHOD_CREATE_BEST_SHOT_METHOD = "rest.v4.analytics.engines.deviceAgents.metadata.bestShot.create"
+METHOD_CREATE_TITLE_IMAGE_METHOD = "rest.v4.analytics.engines.deviceAgents.metadata.title.create"
 
 
 def _concat_url(server_url, path):
@@ -245,3 +246,8 @@ class NxJSONRPC:
     data = best_shot
 
     self.notify(message=data, method=METHOD_CREATE_BEST_SHOT_METHOD)
+
+  def send_title_image(self, title_image):
+    data = title_image
+
+    self.notify(message=data, method=METHOD_CREATE_TITLE_IMAGE_METHOD)
