@@ -16,8 +16,12 @@ from coordinates_tranform import get_pixel_to_coordinates
 
 import queue
 
+import device_for_yolo
+
 RESIZE = 300
 yolo = YOLO('yolov8m.pt')
+
+device_name = device_for_yolo.get_device_name()
 
 
 class DeviceAgent:
@@ -106,7 +110,7 @@ class DeviceAgent:
 
       objects = []
       if success:
-        results = yolo.track(frames, persist=True, device='mps')
+        results = yolo.track(frames, persist=True, device=device_name)
         boxes = results[0].boxes.xywhn.cpu()
 
         if results[0].boxes.id is None:
