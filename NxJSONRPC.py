@@ -8,9 +8,9 @@ from websocket import create_connection
 
 WS_PATH = "/jsonrpc"
 
-METHOD_CREATE_SESSION = "rest.v3.login.sessions.create"
-METHOD_SUBSCRIBE_USERS = "rest.v3.users.subscribe"
-METHOD_UPDATE_USERS = "rest.v3.users.update"
+METHOD_CREATE_SESSION = "rest.v4.login.sessions.create"
+METHOD_SUBSCRIBE_USERS = "rest.v4.users.subscribe"
+METHOD_UPDATE_USERS = "rest.v4.users.update"
 METHOD_SUBSCRIBE_ANALYTICS = 'rest.v4.analytics.subscribe'
 METHOD_CREATE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.create'
 METHOD_DELETE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.delete'
@@ -164,9 +164,9 @@ class NxJSONRPC:
     print("authorized")
 
   async def subscribe_on_users(self, credentials: dict):
-    message = {"id": credentials['username']}
+    message = {"name": credentials['username']}
     parameters = await self.make_request(method=METHOD_SUBSCRIBE_USERS, message=message)
-    self.integration.set_parameters(parameters)
+    self.integration.set_parameters(parameters[0])
 
   async def subscribe_to_analytics(self, integration_id: str):
     message = {"id": integration_id}

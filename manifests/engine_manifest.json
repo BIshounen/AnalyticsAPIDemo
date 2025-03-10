@@ -28,7 +28,7 @@
             {
                 "type": "PolygonFigure",
                 "name": "coordinates_position",
-                "desription": "Points on the stream",
+                "description": "Points on the stream",
                 "minPoints": 3,
                 "maxPoints": 3,
                 "useLabelField": false
@@ -89,7 +89,6 @@
                         "minValue": -90000000,
                         "maxValue": 90000000
                     },
-
                     {
                         "type": "DoubleSpinBox",
                         "name": "coords_3_long",

@@ -1,7 +1,29 @@
 {
-    "id": "nx.analytics_api_yolo_detection",
+    "id": "nxanalyticsapiyolodetection3",
     "name": "Analytics API yolo detection",
     "description": "Application for displaying bounding boxes around yolo detected objects",
     "vendor": "Network Optix",
-    "version": "0.0.1"
+    "version": "0.0.1",
+    "engineSettingsModel":
+    {
+        "type": "Settings",
+        "items": [
+            {
+                "type": "Button",
+                "name": "button_change_password",
+                "caption": "Change Password",
+                "isActive": true,
+                "parametersModel": {
+                    "type": "Settings",
+                    "items": [
+                        {
+                            "type": "TextField",
+                            "name": "parameter",
+                            "caption": "Parameter"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
 }

@@ -48,8 +48,8 @@ class AnalyticsAPIIntegration(AnalyticsAPIInterface):
 
 
   def set_parameters(self, parameters: dict):
-    self.is_approved = parameters.get('parameters', {}).get('integrationRequestData').get('isApproved', False)
-    self.integration_id = parameters.get('parameters', {}).get('integrationRequestData').get('integrationId', None)
+    self.is_approved = parameters.get('parameters', {}).get('integrationRequestData', {}).get('isApproved', False)
+    self.integration_id = parameters.get('parameters', {}).get('integrationRequestData', {}).get('integrationId', None)
     print("is approved: ", self.is_approved)
     print("integration id", self.integration_id)
 

@@ -6,6 +6,7 @@ import uuid
 import cv2
 
 import json
+
 from ultralytics import YOLO
 
 import rest_utils
@@ -142,19 +143,14 @@ class DeviceAgent:
           detected_object = {
               "typeId": "analytics.api.stub.object.type",
               "trackId": str(track_guid),
-              "boundingBox": {
-                "x": float(x) - float(w)/2,
-                "y": float(y) - float(h)/2,
-                "width": float(w),
-                "height": float(h)
-              },
-            "attributes": [
-              {"name":"nx.sys.color", "value": "White"},
-              {"name": "TrackID", "value": str(track_guid)},
-              {"name": "Type", "value": str(results[0].names[int(name_id)])},
-              {"name": "Latitude", "value": str(lat)},
-              {"name": "Longitude", "value": str(lon)}
-            ]
+              "boundingBox": "0.2390625,0.2833333333333333,0.15625x0.2777777777777778",
+              "attributes": [
+                {"name":"nx.sys.color", "value": "White"},
+                {"name": "TrackID", "value": str(track_guid)},
+                {"name": "Type", "value": str(results[0].names[int(name_id)])},
+                {"name": "Latitude", "value": str(lat)},
+                {"name": "Longitude", "value": str(lon)}
+              ]
             }
 
           objects.append(detected_object)
@@ -227,8 +223,8 @@ class FakeObjectsIntegration(AnalyticsAPIIntegration):
     return self.device_agent_manifest
 
   def on_device_agent_created(self, device_parameters):
-    device_agent_id = device_parameters['parameters']['id']
-    engine_id = device_parameters['target']['engineId']
+    device_agent_id = device_parameters['parameters']['id'].strip('{}')
+    engine_id = device_parameters['target']['engineId'].strip('{}')
     self.device_agents[device_agent_id] = DeviceAgent(agent_id=device_agent_id,
                                                       json_rpc_client=self.JSONRPC,
                                                       engine_id=engine_id,
@@ -260,15 +256,24 @@ class FakeObjectsIntegration(AnalyticsAPIIntegration):
       }
 
   def on_engine_settings_update(self, parameters):
-
     return {
       'settingsValues': parameters['settingsValues'],
       'settingsModel': self.integration_manifest['engineSettingsModel']
     }
 
   def on_engine_active_settings_change(self, parameters):
+    value_to_save = parameters.get('params', {}).get('parameter', None)
+    if value_to_save is not None:
+      return {
+        'settingsValues': {'settingsValues': {'saved_param': value_to_save}},
+        'settingsModel': self.integration_manifest['engineSettingsModel']
+      }
 
-    return {
-      'settingsValues': parameters['settingsValues'],
-      'settingsModel': self.integration_manifest['engineSettingsModel']
-    }
+    else:
+      return {
+        'settingsValues': parameters['settingsValues'],
+        'settingsModel': self.integration_manifest['engineSettingsModel']
+      }
+
+  def get_integration_engine_side_settings(self, parameters):
+    return {'value_to_save': '123'}
