@@ -4,8 +4,8 @@
         "objectTypes":
         [
             {
-                "id": "analytics.api.stub.object.type",
-                "name": "Analytics API stub Object Type",
+                "id": "analytics.api.stub.object.vehicle",
+                "name": "Vehicle",
                 "icon": "bytedance.iconpark.palace",
                 "attributes": [
                     {"id": "track_id", "type": "String", "name":  "TrackID"},
@@ -26,6 +26,20 @@
         "items":
         [
             {
+                "type": "SpinBox",
+                "name": "filter_duration",
+                "caption": "Minimum duration",
+                "description": "If the object was detected for less than this value it won't be sent",
+                "defaultValue": 50000
+            },
+            {
+                "type": "SpinBox",
+                "name": "time_correction",
+                "caption": "Time correction",
+                "description": "Timestamp uses current time that can differ from server time",
+                "defaultValue": 0
+            },
+            {
                 "type": "PolygonFigure",
                 "name": "coordinates_position",
                 "description": "Points on the stream",
@@ -36,7 +50,7 @@
             {
                 "type": "Flow",
                 "caption": "First point coordinates",
-                "tooltip": "Latitude and longitude",
+                "description": "Latitude and longitude",
                 "items": [
                     {
                         "type": "DoubleSpinBox",
@@ -58,7 +72,7 @@
             {
                 "type": "Flow",
                 "caption": "Second point coordinates",
-                "tooltip": "Latitude and longitude",
+                "description": "Latitude and longitude",
                 "items": [
                     {
                         "type": "DoubleSpinBox",
@@ -80,7 +94,7 @@
             {
                 "type": "Flow",
                 "caption": "Third point coordinates",
-                "tooltip": "Latitude and longitude",
+                "description": "Latitude and longitude",
                 "items": [
                     {
                         "type": "DoubleSpinBox",

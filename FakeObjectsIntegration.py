@@ -18,7 +18,7 @@ from coordinates_tranform import get_pixel_to_coordinates
 import queue
 
 RESIZE = 300
-yolo = YOLO('yolov8m.pt')
+yolo = YOLO('yolo11n.pt')
 
 
 class DeviceAgent:
@@ -41,7 +41,9 @@ class DeviceAgent:
       'coords_2_lat': 39.110999999999997,
       'coords_2_long': -100.487779,
       'coords_3_lat': 39.110999999999997,
-      'coords_3_long': -100.487779
+      'coords_3_long': -100.487779,
+      'time_correction': 0,
+      'filter_duration': 0
     }
 
     self.cap = None
@@ -66,6 +68,12 @@ class DeviceAgent:
     except KeyError:
       return
 
+    filter_duration = json.loads(values['filter_duration'])
+    time_correction = json.loads(values['time_correction'])
+
+    new_values['filter_duration'] = filter_duration
+    new_values['time_correction'] = time_correction
+
     self.settings = new_values
 
   def cap_reader(self):
@@ -78,7 +86,8 @@ class DeviceAgent:
 
     while self.running:
       success, frame = self.cap.read()
-      current_time = int(time.time()*1000000 - 500000)
+      current_time = int(time.time()*1000000) + self.settings['time_correction']
+      print(self.settings['time_correction'])
 
       if success:
         if not self.q.empty():
@@ -96,6 +105,7 @@ class DeviceAgent:
     read_thread.start()
 
     track_guids = defaultdict(lambda: uuid.uuid4())
+    objects_buffer = {}
 
     # sent_best_shots = []
 
@@ -107,7 +117,7 @@ class DeviceAgent:
 
       objects = []
       if success:
-        results = yolo.track(frames, persist=True, device='mps')
+        results = yolo.track(frames, persist=True, device='mps', tracker="bytetrack.yaml", iou=0.2, conf=0.5)
         boxes = results[0].boxes.xywhn.cpu()
 
         if results[0].boxes.id is None:
@@ -141,9 +151,9 @@ class DeviceAgent:
             lon = round(float(lon), 3)
 
           detected_object = {
-              "typeId": "analytics.api.stub.object.type",
+              "typeId": "analytics.api.stub.object.vehicle",
               "trackId": str(track_guid),
-              "boundingBox": "0.2390625,0.2833333333333333,0.15625x0.2777777777777778",
+              "boundingBox": f"{float(x - w/2)},{float(y - h/2)},{float(w)}x{float(h)}",
               "attributes": [
                 {"name":"nx.sys.color", "value": "White"},
                 {"name": "TrackID", "value": str(track_guid)},
@@ -153,7 +163,28 @@ class DeviceAgent:
               ]
             }
 
-          objects.append(detected_object)
+          if track_guid not in objects_buffer:
+            objects_buffer[track_guid] = {'metadata': [(current_time, detected_object)],
+                                          'first_occurrence': current_time}
+          else:
+            if current_time - objects_buffer[track_guid]['first_occurrence'] > self.settings['filter_duration']:
+              for obj in objects_buffer[track_guid]['metadata']:
+
+                object_data = {
+                  "id": self.engine_id,
+                  "deviceId": self.agent_id,
+                  "timestampUs": obj[0],
+                  "durationUs": 100,
+                  "objects": [obj[1]]
+                }
+
+                self.json_rpc_client.send_object(object_data=object_data)
+
+                objects.append(detected_object)
+
+              else:
+                objects_buffer[track_guid]['metadata'].append((current_time, detected_object))
+
 
           # if str(track_guid) not in sent_best_shots:
           #   best_shot = {
@@ -169,30 +200,31 @@ class DeviceAgent:
           #     },
           #   }
           #
-          #   title = {
-          #     "id": self.engine_id,
-          #     "deviceId": self.agent_id,
-          #     "trackId": str(track_guid),
-          #     "timestampUs": current_time,
-          #     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/2017_Washington_License_Plate.jpg/1600px-2017_Washington_License_Plate.jpg",
-          #     "text": "A12345BC"
-          #   }
+          # title = {
+          #   "id": self.engine_id,
+          #   "deviceId": self.agent_id,
+          #   "trackId": str(track_guid),
+          #   "timestampUs": current_time - 300000,
+          #   "boundingBox": f"{float(x)},{float(y)},{float(w)}x{float(h)}",
+          #   "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/2017_Washington_License_Plate.jpg/1600px-2017_Washington_License_Plate.jpg",
+          #   "text": "AZM9590"
+          # }
           #
           #   sent_best_shots.append(str(track_guid))
           #
           #   self.json_rpc_client.send_best_shot(best_shot=best_shot)
-          #   self.json_rpc_client.send_title_image(title_image=title)
+          # self.json_rpc_client.send_title_image(title_image=title)
 
         object_data = {
           "id": self.engine_id,
           "deviceId": self.agent_id,
           "timestampUs": current_time,
-          "durationUs": 10000,
+          "durationUs": 100,
           "objects": objects
         }
 
         # annotated_frame = results[0].plot()
-        # cv2.imwrite('test.png', annotated_frame)
+        # cv2.imwrite(f'test_{current_time}.png', annotated_frame)
         self.json_rpc_client.send_object(object_data=object_data)
 
 
@@ -225,12 +257,13 @@ class FakeObjectsIntegration(AnalyticsAPIIntegration):
   def on_device_agent_created(self, device_parameters):
     device_agent_id = device_parameters['parameters']['id'].strip('{}')
     engine_id = device_parameters['target']['engineId'].strip('{}')
-    self.device_agents[device_agent_id] = DeviceAgent(agent_id=device_agent_id,
-                                                      json_rpc_client=self.JSONRPC,
-                                                      engine_id=engine_id,
-                                                      duration=10,
-                                                      credentials=self.credentials)
-    self.device_agents[device_agent_id].start()
+    if device_agent_id not in self.device_agents:
+      self.device_agents[device_agent_id] = DeviceAgent(agent_id=device_agent_id,
+                                                        json_rpc_client=self.JSONRPC,
+                                                        engine_id=engine_id,
+                                                        duration=10,
+                                                        credentials=self.credentials)
+      self.device_agents[device_agent_id].start()
 
   def on_device_agent_deletion(self, device_id):
     self.device_agents[device_id].stop()

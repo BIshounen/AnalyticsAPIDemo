@@ -201,7 +201,7 @@ class NxJSONRPC:
 
   def react_on_agent_settings_update(self, message):
     parameters = message['params']['parameters']
-    device_id = message['params']['target']['deviceId']
+    device_id = message['params']['target']['deviceId'].strip('{}')
     data = self.integration.on_agent_settings_update(parameters, device_id)
     respond = {
       'type': 'ok',

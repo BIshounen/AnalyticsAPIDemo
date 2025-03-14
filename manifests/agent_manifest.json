@@ -2,7 +2,7 @@
     "supportedTypes":
     [
         {
-            "objectTypeId": "analytics.api.stub.object.type",
+            "objectTypeId": "analytics.api.stub.object.vehicle",
             "attributes": ["nx.sys.color", "TrackID", "Type", "Latitude", "Longitude"]
         },
         {
