@@ -33,15 +33,15 @@ class AnalyticsAPIInterface(metaclass=abc.ABCMeta):
     raise NotImplemented
 
   @abc.abstractmethod
-  def get_integration_device_agent_side_settings(self, parameters) -> dict:
+  def get_integration_device_agent_side_settings(self, parameters, device_id) -> dict:
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_agent_settings_update(self, parameters) -> dict:
+  def on_agent_settings_update(self, parameters, device_id) -> dict:
     raise NotImplemented
 
   @abc.abstractmethod
-  def on_agent_active_settings_change(self, parameters) -> dict:
+  def on_agent_active_settings_change(self, parameters, device_id) -> dict:
     raise NotImplemented
 
   @abc.abstractmethod

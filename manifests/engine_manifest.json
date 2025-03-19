@@ -4,19 +4,19 @@
         "objectTypes":
         [
             {
-                "id": "analytics.api.stub.object.type",
-                "name": "Analytics API stub Object Type"
+                "id": "analytics.api.stub.object.vehicle",
+                "name": "Vehicle",
+                "icon": "bytedance.iconpark.palace",
+                "attributes": [
+                    {"id": "track_id", "type": "String", "name":  "TrackID"},
+                    {"id": "object_type", "type": "String", "name":  "Type"},
+                    {"id": "pos_latitude", "type": "Number", "name":  "Latitude", "subtype":  "float"},
+                    {"id": "pos_longitude", "type": "Number", "name":  "Longitude", "subtype": "float"}
+                ]
             },
             {
                 "id": "analytics.api.stub.objectTypeWithActions",
                 "name": "Analytics API Stub: Object Type With Actions"
-            }
-        ],
-        "eventTypes":
-        [
-            {
-                "id": "analytics.api.stub.lineCrossing",
-                "name": "Line crossing"
             }
         ]
     },
@@ -26,17 +26,91 @@
         "items":
         [
             {
-                "type": "CheckBox",
-                "name": "Test Device Agent's setSettings",
-                "caption": "Test Device Agent's setSettings",
-                "defaultValue": false
+                "type": "SpinBox",
+                "name": "filter_duration",
+                "caption": "Minimum duration",
+                "description": "If the object was detected for less than this value it won't be sent",
+                "defaultValue": 50000
             },
             {
-                "type": "CheckBox",
-                "name": "Test Device Agent's Active Settings",
-                "caption": "Test Device Agent's Active Settings",
-                "defaultValue": false,
-                "isActive": true
+                "type": "SpinBox",
+                "name": "time_correction",
+                "caption": "Time correction",
+                "description": "Timestamp uses current time that can differ from server time",
+                "defaultValue": 0
+            },
+            {
+                "type": "PolygonFigure",
+                "name": "coordinates_position",
+                "description": "Points on the stream",
+                "minPoints": 3,
+                "maxPoints": 3,
+                "useLabelField": false
+            },
+            {
+                "type": "Flow",
+                "caption": "First point coordinates",
+                "description": "Latitude and longitude",
+                "items": [
+                    {
+                        "type": "DoubleSpinBox",
+                        "name": "coords_1_lat",
+                        "defaultValue": 39111234,
+                        "minValue": -90000000,
+                        "maxValue": 90000000
+                    },
+
+                    {
+                        "type": "DoubleSpinBox",
+                        "name": "coords_1_long",
+                        "defaultValue": -100487779,
+                        "minValue": -180000000,
+                        "maxValue": 180000000
+                    }
+                ]
+            },
+            {
+                "type": "Flow",
+                "caption": "Second point coordinates",
+                "description": "Latitude and longitude",
+                "items": [
+                    {
+                        "type": "DoubleSpinBox",
+                        "name": "coords_2_lat",
+                        "defaultValue": 39111234,
+                        "minValue": -90000000,
+                        "maxValue": 90000000
+                    },
+
+                    {
+                        "type": "DoubleSpinBox",
+                        "name": "coords_2_long",
+                        "defaultValue": -100487779,
+                        "minValue": -180000000,
+                        "maxValue": 180000000
+                    }
+                ]
+            },
+            {
+                "type": "Flow",
+                "caption": "Third point coordinates",
+                "description": "Latitude and longitude",
+                "items": [
+                    {
+                        "type": "DoubleSpinBox",
+                        "name": "coords_3_lat",
+                        "defaultValue": 39111234,
+                        "minValue": -90000000,
+                        "maxValue": 90000000
+                    },
+                    {
+                        "type": "DoubleSpinBox",
+                        "name": "coords_3_long",
+                        "defaultValue": -100487779,
+                        "minValue": -180000000,
+                        "maxValue": 180000000
+                    }
+                ]
             }
         ]
     },

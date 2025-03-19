@@ -3,6 +3,19 @@ from collections import OrderedDict
 import numpy as np
 import uuid
 
+
+def get_centroid(object_rect):
+	start_x, start_y, w, h = object_rect
+
+	end_x = start_x + w
+	end_y = start_y + h
+
+	c_x = int((start_x + end_x) / 2.0)
+	c_y = int((start_y + end_y) / 2.0)
+
+	return c_x, c_y
+
+
 class CentroidTracker:
 	def __init__(self, max_disappeared=50):
 		self.next_object_id = str(uuid.uuid4())
@@ -11,8 +24,8 @@ class CentroidTracker:
 
 		self.max_disappeared = max_disappeared
 
-	def register(self, centroid):
-		self.objects[self.next_object_id] = centroid
+	def register(self, object):
+		self.objects[self.next_object_id] = object
 		self.disappeared[self.next_object_id] = 0
 		self.next_object_id = str(uuid.uuid4())
 
@@ -30,23 +43,11 @@ class CentroidTracker:
 
 			return self.objects
 
-		# initialize an array of input centroids for the current frame
-		input_centroids = np.zeros((len(rects), 2), dtype="int")
-
-		for (i, (startX, startY, w, h)) in enumerate(rects):
-
-			endX = startX + w
-			endY = startY + h
-
-			c_x = int((startX + endX) / 2.0)
-			c_y = int((startY + endY) / 2.0)
-			input_centroids[i] = (c_x, c_y)
-
 		# if we are currently not tracking any objects take the input
 		# centroids and register each of them
 		if len(self.objects) == 0:
-			for i in range(0, len(input_centroids)):
-				self.register(input_centroids[i])
+			for i in range(0, len(rects)):
+				self.register(rects[i])
 
 		# otherwise, we are currently tracking objects so we need to
 		# try to match the input centroids to existing object
@@ -54,12 +55,16 @@ class CentroidTracker:
 		else:
 			# grab the set of object IDs and corresponding centroids
 			object_ids = list(self.objects.keys())
-			object_centroids = list(self.objects.values())
+			objects = list(self.objects.values())
 			# compute the distance between each pair of object
 			# centroids and input centroids, respectively -- our
 			# goal will be to match an input centroid to an existing
 			# object centroid
-			D = dist.cdist(np.array(object_centroids), input_centroids)
+			# D = dist.cdist(np.array(object_centroids), input_centroids)
+
+			D = dist.cdist(np.array(list(map(lambda  e: get_centroid(e), objects))),
+										 np.array(list(map(lambda e: get_centroid(e), rects))))
+
 			# in order to perform this matching we must (1) find the
 			# smallest value in each row and then (2) sort the row
 			# indexes based on their minimum values so that the row
@@ -88,7 +93,7 @@ class CentroidTracker:
 				# set its new centroid, and reset the disappeared
 				# counter
 				object_id = object_ids[row]
-				self.objects[object_id] = input_centroids[col]
+				self.objects[object_id] = rects[col]
 				self.disappeared[object_id] = 0
 				# indicate that we have examined each of the row and
 				# column indexes, respectively
@@ -122,6 +127,6 @@ class CentroidTracker:
 			# register each new input centroid as a trackable object
 			else:
 				for col in unused_cols:
-					self.register(input_centroids[col])
+					self.register(rects[col])
 		# return the set of trackable objects
 		return self.objects

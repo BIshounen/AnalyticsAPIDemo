@@ -8,9 +8,9 @@ from websocket import create_connection
 
 WS_PATH = "/jsonrpc"
 
-METHOD_CREATE_SESSION = "rest.v3.login.sessions.create"
-METHOD_SUBSCRIBE_USERS = "rest.v3.users.subscribe"
-METHOD_UPDATE_USERS = "rest.v3.users.update"
+METHOD_CREATE_SESSION = "rest.v4.login.sessions.create"
+METHOD_SUBSCRIBE_USERS = "rest.v4.users.subscribe"
+METHOD_UPDATE_USERS = "rest.v4.users.update"
 METHOD_SUBSCRIBE_ANALYTICS = 'rest.v4.analytics.subscribe'
 METHOD_CREATE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.create'
 METHOD_DELETE_DEVICE_AGENT = 'rest.v4.analytics.engines.deviceAgents.delete'
@@ -22,6 +22,9 @@ METHOD_NOTIFY_AGENT_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.deviceAg
 METHOD_UPDATE_ENGINE_SETTINGS = 'rest.v4.analytics.engines.settings.update'
 METHOD_NOTIFY_ENGINE_ACTIVE_SETTINGS_CHANGE = 'rest.v4.analytics.engines.settings.notifyActiveSettingChanged'
 METHOD_CREATE_OBJECT_METADATA = "rest.v4.analytics.engines.deviceAgents.metadata.object.create"
+METHOD_CREATE_BEST_SHOT_METHOD = "rest.v4.analytics.engines.deviceAgents.metadata.bestShot.create"
+METHOD_CREATE_TITLE_IMAGE_METHOD = "rest.v4.analytics.engines.deviceAgents.metadata.title.create"
+
 
 def _concat_url(server_url, path):
   initial_url = urllib.parse.urlparse(server_url)
@@ -161,9 +164,9 @@ class NxJSONRPC:
     print("authorized")
 
   async def subscribe_on_users(self, credentials: dict):
-    message = {"id": credentials['username']}
+    message = {"name": credentials['username']}
     parameters = await self.make_request(method=METHOD_SUBSCRIBE_USERS, message=message)
-    self.integration.set_parameters(parameters)
+    self.integration.set_parameters(parameters[0])
 
   async def subscribe_to_analytics(self, integration_id: str):
     message = {"id": integration_id}
@@ -192,12 +195,14 @@ class NxJSONRPC:
 
   def react_on_integration_device_agent_side_settings(self, message):
     parameters = message['params']['parameters']
-    settings = self.integration.get_integration_device_agent_side_settings(parameters)
+    device_id = message['params']['target']['deviceId']
+    settings = self.integration.get_integration_device_agent_side_settings(parameters, device_id)
     self.respond(message=settings, message_id=message['id'])
 
   def react_on_agent_settings_update(self, message):
     parameters = message['params']['parameters']
-    data = self.integration.on_agent_settings_update(parameters)
+    device_id = message['params']['target']['deviceId'].strip('{}')
+    data = self.integration.on_agent_settings_update(parameters, device_id)
     respond = {
       'type': 'ok',
       'data': data
@@ -206,7 +211,8 @@ class NxJSONRPC:
 
   def react_on_agent_active_settings(self, message):
     parameters = message['params']['parameters']
-    data = self.integration.on_agent_active_settings_change(parameters)
+    device_id = message['target']['deviceId']
+    data = self.integration.on_agent_active_settings_change(parameters, device_id)
     respond = {
       'type': 'ok',
       'data': data
@@ -231,7 +237,17 @@ class NxJSONRPC:
     }
     self.respond(message=respond, message_id=message['id'])
 
-  def send_object(self, engine_id, device_agent_id, object_data):
+  def send_object(self, object_data):
     data = object_data
 
     self.notify(message=data, method=METHOD_CREATE_OBJECT_METADATA)
+
+  def send_best_shot(self, best_shot):
+    data = best_shot
+
+    self.notify(message=data, method=METHOD_CREATE_BEST_SHOT_METHOD)
+
+  def send_title_image(self, title_image):
+    data = title_image
+
+    self.notify(message=data, method=METHOD_CREATE_TITLE_IMAGE_METHOD)
