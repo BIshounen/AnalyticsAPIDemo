@@ -1,5 +1,5 @@
 {
-    "id": "nxanalyticsapiyolodetection_test",
+    "id": "nxanalyticsapiyolodetection",
     "name": "Analytics API yolo detection",
     "description": "Application for displaying bounding boxes around yolo detected objects",
     "vendor": "Network Optix",
