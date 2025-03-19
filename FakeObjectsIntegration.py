@@ -107,7 +107,6 @@ class DeviceAgent:
     track_guids = defaultdict(lambda: uuid.uuid4())
     objects_buffer = {}
 
-    # sent_best_shots = []
 
     while self.running:
 
@@ -165,7 +164,7 @@ class DeviceAgent:
 
           if track_guid not in objects_buffer:
             objects_buffer[track_guid] = {'metadata': [(current_time, detected_object)],
-                                          'first_occurrence': current_time}
+                                          'first_occurrence': current_time, 'best_shot_sent': False}
           else:
             if current_time - objects_buffer[track_guid]['first_occurrence'] > self.settings['filter_duration']:
               for obj in objects_buffer[track_guid]['metadata']:
@@ -180,40 +179,32 @@ class DeviceAgent:
 
                 self.json_rpc_client.send_object(object_data=object_data)
 
-                objects.append(detected_object)
 
-              else:
-                objects_buffer[track_guid]['metadata'].append((current_time, detected_object))
+              objects.append(detected_object)
+              if not objects_buffer[track_guid]['best_shot_sent']:
+                best_shot = {
+                  "id": self.engine_id,
+                  "deviceId": self.agent_id,
+                  "trackId": str(track_guid),
+                  "timestampUs": current_time,
+                  "boundingBox": f"{float(x - w/2)},{float(y - h/2)},{float(w)}x{float(h)}",
+                }
+                self.json_rpc_client.send_best_shot(best_shot=best_shot)
 
+                title = {
+                  "id": self.engine_id,
+                  "deviceId": self.agent_id,
+                  "trackId": str(track_guid),
+                  "timestampUs": current_time - 300000,
+                  "boundingBox": f"{float(x)},{float(y)},{float(w)}x{float(h)}",
+                  "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/2017_Washington_License_Plate.jpg/1600px-2017_Washington_License_Plate.jpg",
+                  "text": "AZM9590"
+                }
+                self.json_rpc_client.send_title_image(title_image=title)
 
-          # if str(track_guid) not in sent_best_shots:
-          #   best_shot = {
-          #     "id": self.engine_id,
-          #     "deviceId": self.agent_id,
-          #     "trackId": str(track_guid),
-          #     "timestampUs": current_time,
-          #     "boundingBox": {
-          #       "x": float(x) - float(w)/2,
-          #       "y": float(y) - float(h)/2,
-          #       "width": float(w),
-          #       "height": float(h)
-          #     },
-          #   }
-          #
-          # title = {
-          #   "id": self.engine_id,
-          #   "deviceId": self.agent_id,
-          #   "trackId": str(track_guid),
-          #   "timestampUs": current_time - 300000,
-          #   "boundingBox": f"{float(x)},{float(y)},{float(w)}x{float(h)}",
-          #   "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/2017_Washington_License_Plate.jpg/1600px-2017_Washington_License_Plate.jpg",
-          #   "text": "AZM9590"
-          # }
-          #
-          #   sent_best_shots.append(str(track_guid))
-          #
-          #   self.json_rpc_client.send_best_shot(best_shot=best_shot)
-          # self.json_rpc_client.send_title_image(title_image=title)
+            else:
+              objects_buffer[track_guid]['metadata'].append((current_time, detected_object))
+
 
         object_data = {
           "id": self.engine_id,
