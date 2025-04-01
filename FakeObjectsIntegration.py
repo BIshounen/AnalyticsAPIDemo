@@ -86,7 +86,7 @@ class DeviceAgent:
 
     while self.running:
       success, frame = self.cap.read()
-      current_time = int(time.time()*1000000) + self.settings['time_correction']
+      current_time = int(time.time()*1000) + self.settings['time_correction']
       print(self.settings['time_correction'])
 
       if success:
@@ -172,8 +172,8 @@ class DeviceAgent:
                 object_data = {
                   "id": self.engine_id,
                   "deviceId": self.agent_id,
-                  "timestampUs": obj[0],
-                  "durationUs": 100,
+                  "timestampMs": obj[0],
+                  "durationMs": 1,
                   "objects": [obj[1]]
                 }
 
@@ -195,7 +195,7 @@ class DeviceAgent:
                   "id": self.engine_id,
                   "deviceId": self.agent_id,
                   "trackId": str(track_guid),
-                  "timestampUs": current_time - 300000,
+                  "timestampMs": current_time,
                   "boundingBox": f"{float(x)},{float(y)},{float(w)}x{float(h)}",
                   "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/2017_Washington_License_Plate.jpg/1600px-2017_Washington_License_Plate.jpg",
                   "text": "AZM9590"
@@ -209,8 +209,8 @@ class DeviceAgent:
         object_data = {
           "id": self.engine_id,
           "deviceId": self.agent_id,
-          "timestampUs": current_time,
-          "durationUs": 100,
+          "timestampMs": current_time,
+          "durationMs": 1,
           "objects": objects
         }
 
