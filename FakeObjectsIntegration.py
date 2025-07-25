@@ -124,8 +124,11 @@ class DeviceAgent:
 
         track_ids = results[0].boxes.id.int().cpu().tolist()
         name_ids = results[0].boxes.cls.cpu().tolist()
+        confs = results[0].boxes.conf.tolist()
 
-        for box, track_id, name_id in zip(boxes, track_ids, name_ids):
+        bbox_extension = 0.2
+
+        for box, track_id, name_id, conf in zip(boxes, track_ids, name_ids, confs):
           x, y, w, h = box
           track_guid = track_guids[track_id]
 
@@ -173,7 +176,7 @@ class DeviceAgent:
                   "id": self.engine_id,
                   "deviceId": self.agent_id,
                   "timestampMs": obj[0],
-                  "durationMs": 1,
+                  "durationMs": 200,
                   "objects": [obj[1]]
                 }
 
@@ -182,12 +185,20 @@ class DeviceAgent:
 
               objects.append(detected_object)
               if not objects_buffer[track_guid]['best_shot_sent']:
+                # x_bb = float(min(max(0.0, float(x - w/2 - x/10)), float(w)))
+                # y_bb = float(max(0.0, min(float(h), float(y - h/2 - y/10))))
+                x_bb = float(x) - float(w)/2 - bbox_extension/2
+                y_bb = float(y) - float(h)/2 - bbox_extension/2
                 best_shot = {
                   "id": self.engine_id,
                   "deviceId": self.agent_id,
                   "trackId": str(track_guid),
-                  "timestampUs": current_time,
-                  "boundingBox": f"{float(x - w/2)},{float(y - h/2)},{float(w)}x{float(h)}",
+                  "timestampMs": current_time,
+                  "boundingBox": f"{x_bb},{y_bb},{float(w) + bbox_extension}x{float(h) + bbox_extension}",
+                  # "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvi7HpQ-_PMSMOFrj1hwjp6LDcI-jm3Ro0Xw&s"
+                  # "imageUrl": "https://neweralive.na/wp-content/uploads/2024/06/lloyd-sikeba.jpg"
+                  # "imageUrl": "https://img.freepik.com/free-psd/white-isolated-car_23-2151852918.jpg?semt=ais_hybrid&w=740"
+                  # "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNpuhjyL7TfRHw_00ZjcyurN2dVmIvlBdtOA&s"
                 }
                 self.json_rpc_client.send_best_shot(best_shot=best_shot)
 
@@ -202,8 +213,33 @@ class DeviceAgent:
                 }
                 self.json_rpc_client.send_title_image(title_image=title)
 
+                objects_buffer[track_guid]['best_shot_sent'] = True
+                objects_buffer[track_guid]['best_shot_conf'] = conf
+
+              else:
+                if conf > objects_buffer[track_guid]['best_shot_conf']:
+                  print(conf)
+                  x_bb = float(x) - float(w)/2 - bbox_extension/2
+                  y_bb = float(y) - float(h)/2 - bbox_extension/2
+                  best_shot = {
+                    "id": self.engine_id,
+                    "deviceId": self.agent_id,
+                    "trackId": str(track_guid),
+                    "timestampMs": current_time,
+                    "boundingBox": f"{x_bb},{y_bb},{float(w) + bbox_extension}x{float(h) + bbox_extension}",
+                    # "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvi7HpQ-_PMSMOFrj1hwjp6LDcI-jm3Ro0Xw&s"
+                    # "imageUrl": "https://neweralive.na/wp-content/uploads/2024/06/lloyd-sikeba.jpg"
+                    # "imageUrl": "https://img.freepik.com/free-psd/white-isolated-car_23-2151852918.jpg?semt=ais_hybrid&w=740"
+                    # "imageUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNpuhjyL7TfRHw_00ZjcyurN2dVmIvlBdtOA&s"
+                  }
+
+                  self.json_rpc_client.send_best_shot(best_shot=best_shot)
+                  objects_buffer[track_guid]['best_shot_conf'] = conf
+
             else:
               objects_buffer[track_guid]['metadata'].append((current_time, detected_object))
+
+
 
 
         object_data = {
